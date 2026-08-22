@@ -4,6 +4,12 @@
 
 To leverage important internal documents in an AI application, you need excellent OCR to use figures and tables effectively, and you should improve usability with an Agent. Here we explain how to extract sufficient information from documents as text using the strong image-analysis capabilities of OpenAI's GPT models, implement it as a knowledge graph, and use it with an agent. Knowledge graph generation draws on the **LLM Wiki** concept from **Andrej Karpathy**, former OpenAI co-founder; for synonym performance we use vector embeddings to implement **hybrid search** on **docgraph**. When a user uploads files in the Agent, a multimodal parser performs OCR and extracts a knowledge graph. Depending on the user's question, MCP retrieves related documents from the graph, and SKILL can generate reports. We use **LangGraph**, the most widely used agent framework in Korea, and the Web UI is built with **FastAPI + React**.
 
+Below is the agent architecture using DocGraph. You can enforce access control so external traffic cannot reach the app through the VPC, and use serverless **ECS Fargate** to run the Agent without heavy infrastructure operations.
+
+<img width="900" alt="image" src="https://github.com/user-attachments/assets/73fea696-cc15-4166-8702-91556f42de1c" />
+
+The following describes the overall system layout. Users connect through the browser Web UI, and the LangGraph Agent searches and uses the knowledge graph via MCP and Skills.
+
 | Component | Path | Role |
 |-----------|------|------|
 | Web UI | `application/server.py`, `application/web/` | Task·Chat·Skill/MCP settings, SSE streaming |
