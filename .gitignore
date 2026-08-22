@@ -1,0 +1,24 @@
+.DS_Store
+**/.DS_Store
+
+# Python
+**/__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# App local data / secrets
+application/config.json
+application/.session_storage/
+application/data/
+application/web/node_modules/
+application/web/dist/
+application/MEMORY.md
+application/memory/
+
+# Graph build artifacts
+graph/corpus/
+graph/out/
+graphify-out/
+application/graphify-out/

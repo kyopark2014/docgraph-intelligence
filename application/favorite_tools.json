@@ -1,0 +1,10 @@
+{
+  "MCP": [
+    "tavily",
+    "graph memory",
+    "docgraph"
+  ],
+  "SKILL": [
+    "graphify"
+  ]
+}
