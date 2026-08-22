@@ -484,16 +484,16 @@ def _render_template(payload: dict[str, Any], *, query_url: str = "/api/graph/qu
 
   <div class="controls">
     <div class="controls-row">
-      <button type="button" class="ctrl-btn pattern-btn active" data-pattern="pattern1" onclick="selectPattern('pattern1')" title="Force Atlas (현재)">Force Atlas</button>
+      <button type="button" class="ctrl-btn pattern-btn active" data-pattern="pattern1" onclick="selectPattern('pattern1')" title="Force Atlas (current)">Force Atlas</button>
       <button type="button" class="ctrl-btn pattern-btn" data-pattern="pattern2" onclick="selectPattern('pattern2')" title="Neo4j Explore">Neo4j Explore</button>
       <button type="button" class="ctrl-btn pattern-btn" data-pattern="pattern3" onclick="selectPattern('pattern3')" title="Holistic View">Holistic View</button>
     </div>
     <div class="controls-row">
-      <button type="button" class="ctrl-btn" id="fit-view-btn" onclick="fitView()">전체 보기</button>
-      <button type="button" class="ctrl-btn" onclick="stabilize()">레이아웃 재정렬</button>
-      <button type="button" class="ctrl-btn" id="legend-toggle-btn" onclick="toggleLegend()">범례 숨기기</button>
-      <button type="button" class="ctrl-btn" id="isolate-toggle-btn" onclick="toggleIsolates()" title="연결(edge)이 없는 노드 표시/숨기기">고립 숨기기</button>
-      <button type="button" class="ctrl-btn" onclick="filterGroup(null)">필터 해제</button>
+      <button type="button" class="ctrl-btn" id="fit-view-btn" onclick="fitView()">Fit view</button>
+      <button type="button" class="ctrl-btn" onclick="stabilize()">Reset layout</button>
+      <button type="button" class="ctrl-btn" id="legend-toggle-btn" onclick="toggleLegend()">Hide legend</button>
+      <button type="button" class="ctrl-btn" id="isolate-toggle-btn" onclick="toggleIsolates()" title="Show or hide nodes without connections">Hide isolated</button>
+      <button type="button" class="ctrl-btn" onclick="filterGroup(null)">Clear filter</button>
     </div>
   </div>
 </div>
@@ -528,7 +528,7 @@ function hideDetail() {{
 
 function syncLegendToggleLabel() {{
   const btn = document.getElementById('legend-toggle-btn');
-  if (btn) btn.textContent = legendHidden ? '범례 보이기' : '범례 숨기기';
+  if (btn) btn.textContent = legendHidden ? 'Show legend' : 'Hide legend';
 }}
 
 function toggleLegend(force) {{
@@ -545,18 +545,18 @@ function syncIsolateToggleLabel() {{
   if (isolateCount === 0) {{
     btn.disabled = true;
     btn.classList.remove('active');
-    btn.textContent = '고립 없음';
-    btn.title = '연결 없는 노드가 없습니다';
+    btn.textContent = 'No isolates';
+    btn.title = 'No nodes without connections';
     return;
   }}
   btn.disabled = false;
   btn.classList.toggle('active', hideIsolates);
   btn.textContent = hideIsolates
-    ? `고립 보이기 (${{isolateCount}})`
-    : `고립 숨기기 (${{isolateCount}})`;
+    ? `Show isolated (${{isolateCount}})`
+    : `Hide isolated (${{isolateCount}})`;
   btn.title = hideIsolates
-    ? '연결 없는 노드를 다시 표시'
-    : '연결(edge)이 없는 노드 숨기기';
+    ? 'Show nodes without connections'
+    : 'Hide nodes without connections';
 }}
 
 function applyNodeVisibility() {{

@@ -2,7 +2,7 @@
 
 [한국어](./README_kr.md)
 
-**Andrej Karpathy**, co-founder of OpenAI and former AI lead at Tesla, proposed querying data locally with an LLM Wiki built from structured Markdown. The idea is to explore and synthesize a local corpus as a **knowledge graph** without requiring RAG or a vector database.
+**Andrej Karpathy**, co-founder of OpenAI and former AI lead at Tesla, proposed querying data locally with a DocGraph built from structured Markdown. The idea is to explore and synthesize a local corpus as a **knowledge graph** without requiring RAG or a vector database.
 
 **docgraph-intelligence** turns that idea into a **web Agent + Knowledge Graph + DocGraph**.
 
@@ -38,7 +38,7 @@ Raw data ingestion → LLM compiles & maintains DocGraph / Knowledge Graph → Q
 
 1. [Overview](#overview)
 2. [Operation Architecture](#operation-architecture)
-3. [LLM Wiki vs RAG](#️-llm-wiki-vs-rag--when-to-use-which)
+3. [DocGraph vs RAG](#️-docgraph-vs-rag--when-to-use-which)
 4. [graphify](#graphify) — corpus → graph pipeline
 5. [Graph](#graph) — dual graphs · visualization patterns
 6. [Document search](#document-search) — Ask panel · Agent MCP
@@ -169,16 +169,16 @@ The Agent runs a ReAct loop with MCP tools and Skill instructions. Long chats tr
 
 ---
 
-## ⚖️ LLM Wiki vs RAG — When to Use Which?
+## ⚖️ DocGraph vs RAG — When to Use Which?
 
-| **LLM Wiki is better when** | **RAG is better when** |
+| **DocGraph is better when** | **RAG is better when** |
 |---|---|
 | Complex questions spanning multiple documents | Large-scale data that changes in real time |
 | Deep understanding and synthesis are required | Simple fact lookups |
 | Expert-curated corpus | Source provenance tracking matters |
 | Questions needing structural reasoning | You need rapid deployment |
 
-> 💡 **Key analogy**: RAG is a database query; LLM Wiki is a second brain — complementary, not competing.
+> 💡 **Key analogy**: RAG is a database query; DocGraph is a second brain — complementary, not competing.
 
 In docgraph-intelligence you run a **chat Agent (MCP)** alongside **graph document search**. The graph path needs no embedding index: it walks `graph.json` and pulls raw-text excerpts.
 
@@ -493,7 +493,7 @@ Folder-scale CLI example with `/graphify`:
 
 <img width="723" height="510" alt="image" src="https://github.com/user-attachments/assets/366be416-3179-4072-bb2e-981b7b4e50ea" />
 
-Then `/graphify query "How to transition from RAG to LLM Wiki?"` queries the graph:
+Then `/graphify query "How to transition from RAG to DocGraph?"` queries the graph:
 
 <img width="728" height="667" alt="image" src="https://github.com/user-attachments/assets/b99ba277-445c-47ee-80a6-6a20d4b1dbd9" />
 
