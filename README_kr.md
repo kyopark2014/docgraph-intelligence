@@ -2,7 +2,7 @@
 
 [English](./README.md)
 
-AI application에서 사내의 중요한 문서를 활용하고자 한다면, 문서안의 그림과 표를 효과적으로 활용하기 위해 우수한 OCR 기능이 필요하고 Agnet를 이용해 활용성을 높여야 합니다. 여기에서는 OpenAI의 GPT모델이 가지는 높은 이미지분석 능력을 이용해 문서로 부터 충분한 정보를 text로 추출하고, 이를 knowledge graph로 구현하여 agent로 활용하는 방법을 설명합니다. Knowledge graph의 생성은 OpenAI 공동 창업자이자였던 **Andrej Karpathy**의 LLM Wiki의 개념을 활용하였고, 유사어 성능 향상을 위해 vector embedding을 이용하여 **docgraph**을 구현하였습니다. Agent에서 파일을 업로드하면 multi modal parser를 이용해 OCR하고 knowledge graph를 추출합니다. 이후 사용자의 질문에 따라 MCP를 이용해 관련된 문서를 graph에서 가져오고, SKILL을 이용해 보고서를 생성할 수 있습니다. Agent framework로 한국에서 가장 많이 사용되고 있는 **LangGraph**를 이용하였고, Web UI는 **FastAPI + React**로 구현하였습니다.
+AI application에서 사내의 중요한 문서를 활용하고자 한다면, 문서안의 그림과 표를 효과적으로 활용하기 위해 우수한 OCR 기능이 필요하고 Agnet를 이용해 활용성을 높여야 합니다. 여기에서는 OpenAI의 GPT모델이 가지는 높은 이미지분석 능력을 이용해 문서로 부터 충분한 정보를 text로 추출하고, 이를 knowledge graph로 구현하여 agent로 활용하는 방법을 설명합니다. Knowledge graph의 생성은 OpenAI 공동 창업자이자였던 **Andrej Karpathy**의 LLM Wiki의 개념을 활용하였고, 유사어 성능 향상을 위해 vector embedding을 이용하여 **docgraph**에 hybrid 검색을 구현하였습니다. Agent에서 파일을 업로드하면 multi modal parser를 이용해 OCR하고 knowledge graph를 추출합니다. 이후 사용자의 질문에 따라 MCP를 이용해 관련된 문서를 graph에서 가져오고, SKILL을 이용해 보고서를 생성할 수 있습니다. Agent framework로 한국에서 가장 많이 사용되고 있는 **LangGraph**를 이용하였고, Web UI는 **FastAPI + React**로 구현하였습니다.
 
 | 구분 | 경로 | 역할 |
 |------|------|------|
@@ -123,16 +123,14 @@ Agent는 도구(MCP)·Skill 지시문을 받아 ReAct 루프로 동작합니다.
 
 
 
-### ⚖️ LLM Wiki vs RAG — 언제 뭘 쓸까?
+### DocGraph vs RAG 
 
-| **LLM Wiki가 유리한 경우** | **RAG가 유리한 경우** |
+| **DocGraph가 유리한 경우** | **RAG가 유리한 경우** |
 |---|---|
 | 여러 문서를 넘나드는 복잡한 질문 | 실시간으로 변하는 대규모 데이터 |
 | 깊은 이해와 합성이 필요할 때 | 단순 사실 조회 |
 | 전문가가 직접 큐레이션한 코퍼스 | 출처(provenance) 추적이 중요할 때 |
 | 구조적 추론이 필요한 질문 | 빠른 배포가 필요할 때 |
-
-> 💡 **핵심 비유**: RAG는 데이터베이스 쿼리, LLM Wiki는 제2의 두뇌 — 경쟁 관계가 아니라 상호 보완 관계!
 
 docgraph-intelligence에서는 **채팅 Agent(MCP)** 와 **그래프 문서검색**을 함께 둡니다. (별도 RAG/KB 업로드는 제거됨) 그래프 쪽은 임베딩 인덱스 없이 `graph.json` 순회 + 원문 excerpt로 답을 보강합니다.
 
@@ -143,7 +141,7 @@ docgraph-intelligence에서는 **채팅 Agent(MCP)** 와 **그래프 문서검�
 
 ## Graph 
 
-docgraph-intelligence에는 **두 개의 독립 그래프**가 있습니다. 입력·저장 위치·파이프라인이 다르며, 시각화 패턴(Force Atlas / Neo4j Explore / Holistic View)과 문서검색 UI는 공통입니다.
+docgraph-intelligence에는 아래와 같이 대화 내용으로 부터 개인화된 추천과 같은 memory 기능을 제공하는 Knowledge Graph와 문서로 부터 정보를 가져오는 DocGraph가 있습니다. 입력·저장 위치·파이프라인이 다르며, 시각화 패턴(Force Atlas / Neo4j Explore / Holistic View)과 문서검색 UI는 공통으로 사용합니다.
 
 | | **Knowledge Graph** | **DocGraph** |
 |--|---------------------|----------------|
@@ -154,112 +152,6 @@ docgraph-intelligence에는 **두 개의 독립 그래프**가 있습니다. 입
 | 갱신 | Settings → **Knowledge** → Sync (`POST /api/graph/rebuild`) | Settings → DocGraph → **Sync** |
 | 보기 | Settings → Knowledge → **Graph** / 브랜드 클릭 | Settings → DocGraph → **Graph** |
 | Agent MCP | **`graph memory`** → `recall_graph_memory` | **`docgraph`** → `recall_docgraph` |
-
-
-### Graphify T-Box의 실제 엣지 타입 전체 목록
-
-> **Graphify의 T-Box는 `extract.py` 소스 코드 안에 하드코딩된 엣지 타입(relation 값) 집합입니다.**
-> OWL/RDF처럼 별도 온톨로지 파일이 없고, 별도 config로 사용자 정의도 안 돼요!
-
-```
-Graphify T-Box 위치:
-  graphify/extract.py 내부의 add_edge() 호출부
-      ↓
-  "relation": "calls" | "imports" | "contains" | "inherits" | ...
-```
-
-
-### 코드 분석용 엣지 타입 (AST 기반 — `EXTRACTED`)
-
-| 엣지 타입 | 신뢰도 | 의미 | 예시 |
-|---|---|---|---|
-| `contains` | EXTRACTED | 파일이 클래스/함수를 포함 | `auth.py` → `DigestAuth` |
-| `imports` | EXTRACTED | 파일이 모듈을 임포트 | `main.py` → `requests` |
-| `imports_from` | EXTRACTED | 파일이 특정 모듈에서 임포트 | `auth.py` → `models` |
-| `inherits` | EXTRACTED | 클래스가 부모 클래스를 상속 | `DigestAuth` → `Auth` |
-| `method` | EXTRACTED | 클래스가 메서드를 보유 | `DigestAuth` → `.authenticate()` |
-
-### 코드 분석용 엣지 타입 (Call Graph — `INFERRED`)
-
-| 엣지 타입 | 신뢰도 | 의미 | 예시 |
-|---|---|---|---|
-| `calls` | INFERRED | 함수/메서드가 다른 함수를 호출 | `.authenticate()` → `.hash()` |
-| `uses` | INFERRED | 크로스파일 임포트 해석 | `DigestAuth` → `Response` |
-
-### 문서/이미지/PDF용 엣지 타입 (LLM 시맨틱 분석)
-
-문서 처리는 LLM(OpenAI GPT)이 자유 형식으로 엣지를 생성하므로, 아래는 **LLM이 판단하는 의미 관계들**이에요:
-
-| 엣지 타입 | 예시 |
-|---|---|
-| `references` | 논문A가 논문B를 인용 |
-| `explains` | 문서가 개념을 설명 |
-| `depends_on` | 모듈이 다른 모듈에 의존 |
-| `defines` | 파일이 개념을 정의 |
-| 기타 자유형식 | LLM이 문맥에서 판단 |
-
-### 신뢰도 태그 (Confidence Labels) — T-Box의 핵심 특징!
-
-| 태그 | 의미 |
-|---|---|
-| `EXTRACTED` | 소스에서 **직접 확인된** 사실 (import 구문, class 선언 등) |
-| `INFERRED` | **합리적 추론** (call graph, 공동 출현) |
-| `AMBIGUOUS` | **불확실** — GRAPH_REPORT.md에서 검토 필요 |
-
-> 💡 이게 Graphify만의 T-Box 차별점이에요! OWL/RDF에는 없는 **신뢰도 메타데이터** 개념이에요.
-
-
-
-### T-Box와 A-Box의 분리 방식
-
-```
-Graphify T-Box                    Graphify A-Box
-────────────────────              ───────────────────────────────────
-"relation" 값 집합                 graph.json의 실제 nodes + edges
-
-contains                           DigestAuth --contains--> .authenticate()
-imports                            auth.py --imports_from--> models
-imports_from                       httpx.py --imports--> ssl
-inherits                           BasicAuth --inherits--> AuthBase
-method                             Client --method--> .send()
-calls       (INFERRED)             .build_request() --calls--> .encode()
-uses        (INFERRED)             DigestAuth --uses--> Response
-```
-
-### Graphify T-Box vs 다른 도구 비교
-
-| 구분 | **Graphify** | **Graphiti** | **OWL/RDF** |
-|---|---|---|---|
-| **T-Box 위치** | `extract.py` 코드 내 하드코딩 | Pydantic 모델 파일 | `.ttl` / `.owl` 파일 |
-| **T-Box 커스터마이즈** | ❌ 소스 수정 필요 | ✅ Pydantic 모델 정의 | ✅ 완전 자유 |
-| **신뢰도 태깅** | ✅ EXTRACTED/INFERRED/AMBIGUOUS | ❌ (temporal validity로 대체) | ❌ |
-| **도메인 추론** | ❌ | ❌ | ✅ HermiT/Pellet |
-| **업데이트 방식** | `--update` (A-Box만) | `add_episode()` 실시간 | 트리플스토어 직접 수정 |
-| **T-Box 안정성** | 버전 업에서만 변경 | 언제든 변경 가능 | 언제든 변경 가능 |
-| **주요 목적** | 코드/문서 구조 이해 | AI 에이전트 메모리 | 시맨틱 웹 표준 |
-
-
-### graph.json 생성 및 활용
-
-아래와 같이 graph.json을 생성고 활용합니다.
-
-① 넣는 방법: graphify . 실행 → 파일 자동 분석 → graph.json 생성
-② 업데이트:  graphify . --update → 변경된 파일만 SHA256 체크 후 증분 머지
-③ 활용:      graphify query / path / explain 또는 graph.json 직접 Python 분석
-
-```
-┌─────────────────────────────────────────────────────┐
-│                   graph.json                        │
-│                                                     │
-│  T-Box: "relation" 값 종류                            │
-│         (calls, contains, inherits ...)             │
-│                                                     │
-│  A-Box: 실제 인스턴스 데이터                             │
-│         nodes: [{id, label, file_type, ...}]        │
-│         links: [{source, target, relation, ...}]    │
-└─────────────────────────────────────────────────────┘
-```
-
 
 
 ### Graph 활용
@@ -305,10 +197,114 @@ graph.json (+ communities)
   application/graph_query.query_user_graph()
 ```
 
+### Graphify T-Box
+
+**Graphify**의 T-Box는 `extract.py` 소스 코드 안에 하드코딩된 엣지 타입(relation 값) 집합입니다. OWL/RDF와 다르게 미리 정의된 edge type을 아래와 같이 활용합니다.
+
+```
+Graphify T-Box 위치:
+  graphify/extract.py 내부의 add_edge() 호출부
+      ↓
+  "relation": "calls" | "imports" | "contains" | "inherits" | ...
+```
+
+
+#### 코드 분석용 엣지 타입 (AST 기반 — `EXTRACTED`)
+
+| 엣지 타입 | 신뢰도 | 의미 | 예시 |
+|---|---|---|---|
+| `contains` | EXTRACTED | 파일이 클래스/함수를 포함 | `auth.py` → `DigestAuth` |
+| `imports` | EXTRACTED | 파일이 모듈을 임포트 | `main.py` → `requests` |
+| `imports_from` | EXTRACTED | 파일이 특정 모듈에서 임포트 | `auth.py` → `models` |
+| `inherits` | EXTRACTED | 클래스가 부모 클래스를 상속 | `DigestAuth` → `Auth` |
+| `method` | EXTRACTED | 클래스가 메서드를 보유 | `DigestAuth` → `.authenticate()` |
+
+#### 코드 분석용 엣지 타입 (Call Graph — `INFERRED`)
+
+| 엣지 타입 | 신뢰도 | 의미 | 예시 |
+|---|---|---|---|
+| `calls` | INFERRED | 함수/메서드가 다른 함수를 호출 | `.authenticate()` → `.hash()` |
+| `uses` | INFERRED | 크로스파일 임포트 해석 | `DigestAuth` → `Response` |
+
+#### 문서/이미지/PDF용 엣지 타입 (LLM 시맨틱 분석)
+
+문서 처리는 LLM(OpenAI GPT)이 자유 형식으로 엣지를 생성하는데, 아래는 LLM이 판단하는 의미 관계입니다.
+
+| 엣지 타입 | 예시 |
+|---|---|
+| `references` | 논문A가 논문B를 인용 |
+| `explains` | 문서가 개념을 설명 |
+| `depends_on` | 모듈이 다른 모듈에 의존 |
+| `defines` | 파일이 개념을 정의 |
+| 기타 자유형식 | LLM이 문맥에서 판단 |
+
+#### 신뢰도 태그 (Confidence Labels)
+
+| 태그 | 의미 |
+|---|---|
+| `EXTRACTED` | 소스에서 **직접 확인된** 사실 (import 구문, class 선언 등) |
+| `INFERRED` | **합리적 추론** (call graph, 공동 출현) |
+| `AMBIGUOUS` | **불확실** — GRAPH_REPORT.md에서 검토 필요 |
+
+신뢰도 태그는 Graphify에서 정의한 신뢰도 메타데이터라는 개념을 이용합니다.
+
+
+
+#### T-Box와 A-Box의 분리 방식
+
+```
+Graphify T-Box                    Graphify A-Box
+────────────────────              ───────────────────────────────────
+"relation" 값 집합                 graph.json의 실제 nodes + edges
+
+contains                           DigestAuth --contains--> .authenticate()
+imports                            auth.py --imports_from--> models
+imports_from                       httpx.py --imports--> ssl
+inherits                           BasicAuth --inherits--> AuthBase
+method                             Client --method--> .send()
+calls       (INFERRED)             .build_request() --calls--> .encode()
+uses        (INFERRED)             DigestAuth --uses--> Response
+```
+
+#### Graphify T-Box vs 다른 도구 비교
+
+| 구분 | **Graphify** | **Graphiti** | **OWL/RDF** |
+|---|---|---|---|
+| **T-Box 위치** | `extract.py` 코드 내 하드코딩 | Pydantic 모델 파일 | `.ttl` / `.owl` 파일 |
+| **T-Box 커스터마이즈** | ❌ 소스 수정 필요 | ✅ Pydantic 모델 정의 | ✅ 완전 자유 |
+| **신뢰도 태깅** | ✅ EXTRACTED/INFERRED/AMBIGUOUS | ❌ (temporal validity로 대체) | ❌ |
+| **도메인 추론** | ❌ | ❌ | ✅ HermiT/Pellet |
+| **업데이트 방식** | `--update` (A-Box만) | `add_episode()` 실시간 | 트리플스토어 직접 수정 |
+| **T-Box 안정성** | 버전 업에서만 변경 | 언제든 변경 가능 | 언제든 변경 가능 |
+| **주요 목적** | 코드/문서 구조 이해 | AI 에이전트 메모리 | 시맨틱 웹 표준 |
+
+
+### graph.json 생성 및 활용
+
+아래와 같이 graph.json을 생성고 활용합니다.
+
+① 넣는 방법: graphify . 실행 → 파일 자동 분석 → graph.json 생성
+② 업데이트:  graphify . --update → 변경된 파일만 SHA256 체크 후 증분 머지
+③ 활용:      graphify query / path / explain 또는 graph.json 직접 Python 분석
+
+```
+┌─────────────────────────────────────────────────────┐
+│                   graph.json                        │
+│                                                     │
+│  T-Box: "relation" 값 종류                            │
+│         (calls, contains, inherits ...)             │
+│                                                     │
+│  A-Box: 실제 인스턴스 데이터                             │
+│         nodes: [{id, label, file_type, ...}]        │
+│         links: [{source, target, relation, ...}]    │
+└─────────────────────────────────────────────────────┘
+```
+
+
 
 ### Graph Pattern
 
-아래의 패턴들은 **같은 `graph.json`**을 쓰며, 차이점은 “무엇을 한눈에 보이게 하느냐”입니다.
+아래의 패턴들은 **같은 `graph.json`**을 쓰며, 차이점은 “무엇을 한눈에 보이게 하느냐”입니다. 또한 graph를 통해 node, edge의 관게를 확인하고 isolated graph의 숫자 통해 graph 생성이 잘되었는지 확인할 수 있습니다.
 
 #### Force Atlas (pattern1)
 
@@ -364,9 +360,7 @@ Holistic view의 graph 화면입니다.
 
 
 
----
-
-## Knowledge Graph
+### Knowledge Graph
 
 **채팅 대화**에서 엔티티·관계를 뽑아, 사이드바 브랜드 클릭 시 모달로 보는 그래프입니다. Cursor `/graphify` Skill에만 의존하지 않고, [`graph/`](./graph/) 단독 파이프라인이 **tasks.db → corpus → graph.json → HTML**을 만듭니다. 오케스트레이터는 [run_pipeline.py](./graph/run_pipeline.py)입니다.
 
@@ -427,12 +421,12 @@ tasks.db
 
 
 
-## DocGraph
+### DocGraph
 
 Settings → DocGraph → **Sync** (`docgraph_jobs.py` 백그라운드)로 DocGraph를 생성합니다. 시각화 패턴·문서검색은 아래 [Graph](#graph)를 참고하세요. 채팅 Agent에서 DocGraph 코퍼스를 검색하려면 Settings → MCP에서 **`docgraph`** 를 켭니다. 도구 `recall_docgraph`는 `POST /api/docgraph/query`와 같은 `query_user_graph()` 경로를 사용합니다. 자세한 내용은 [Agent MCP (graph memory · docgraph)](#agent-mcp-graph-memory--docgraph)를 보세요.
 
 
-### 핵심 루프 (Core Loop)
+#### 핵심 루프 (Core Loop)
 
 ```
 원시 데이터 투입 → LLM이 위키·그래프 컴파일·유지 → 쿼리 → 출력물 다시 위키에 저장 → 지식 복리 축적
@@ -448,7 +442,7 @@ Settings → DocGraph → **Sync** (`docgraph_jobs.py` 백그라운드)로 DocGr
 | 장기 비전 | 합성 데이터 생성 + 파인튜닝 → 모델 가중치에 코퍼스 내재화 |
 
 
-### 폴더 위치
+#### 폴더 위치
 
 | 역할 | 경로 |
 |------|------|
@@ -473,7 +467,7 @@ application/.session_storage/{user}/docgraph/
 
 > **Note:** Upstream graphify `detect()`는 기본적으로 **Source 폴더 옆**에 `{source}/graphify-out/converted`를 만듭니다. DocGraph Sync는 이를 **해당 사용자의** `{docgraph}/graphify-out/converted`로 옮긴 뒤, PDF 등 시맨틱용 마크다운도 같은 곳에 둡니다. Source 옆 `graphify-out`은 Sync 산출물이 아닙니다.
 
-### 생성 과정
+#### 생성 과정
 
 ```text
 Sources / raw (없으면 DocGraph 루트)
@@ -499,7 +493,7 @@ pip install graphifyy && graphify install
 /graphify .   # 현재 폴더에 실행
 ```
 
-### 문서의 추가 (`raw` · Sources)
+#### 문서의 추가 (`raw` · Sources)
 
 DocGraph용 원본은 **`raw` 입력함(inbox)** 에 모읍니다. `raw`는 Sync가 자동 생성하는 폴더가 아니라, **넣고 싶은 코퍼스를 모아 두는 곳**입니다.
 
@@ -511,7 +505,7 @@ Settings → DocGraph → Sync는 `raw/`가 있으면 그 폴더를, 없으면 D
 - 직접 복사·이동하거나, `/graphify add <url>`로 URL을 받아 `./raw`에 저장
 - Sync / `/graphify`가 이 폴더(또는 지정 경로)를 읽어 `graphify-out/`에 그래프를 만듦
 
-#### 예: `/document/doc/doc01.pdf`만 있는 경우
+예: `/document/doc/doc01.pdf`만 있는 경우
 
 `raw`에 자동으로 들어오지 않습니다.
 
@@ -526,7 +520,7 @@ Settings → DocGraph → Sync는 `raw/`가 있으면 그 폴더를, 없으면 D
 
 시맨틱 단계는 `.md`를 입력으로 쓰므로, Source의 `.pdf`/`.txt`는 Sync 시 텍스트 마크다운으로 변환한 뒤 추출합니다(이미지는 vision 미지원으로 skip).
 
-### URL 리소스 수집 방식
+#### URL 리소스 수집 방식
 
 Configure에서 URL을 **추가하는 순간** `graphify.ingest`가 HTTP(S)로 리소스를 가져와 해당 사용자의 `{docgraph}/raw`에 저장합니다. Sync는 URL을 다시 fetch하지 않고, 이미 `raw`에 있는 파일(+설정된 폴더)만 추출합니다.
 
@@ -538,7 +532,7 @@ Configure에서 URL을 **추가하는 순간** `graphify.ingest`가 HTTP(S)로 �
 
 구현은 브라우저 자동화(Playwright 등)가 아니라 **서버 측 HTTP fetch + HTML→마크다운 변환**입니다 (`urllib` 기반 `safe_fetch`). http/https만 허용하고, private IP·클라우드 메타데이터 엔드포인트는 차단합니다. JavaScript로만 렌더링되는 사이트는 본문이 거의 안 잡힐 수 있습니다.
 
-### 지원 파일 (업스트림 /graphify Skill 기준)
+#### 지원 파일 (업스트림 /graphify Skill 기준)
 
 - Code: .py, .ts, .js, .go, .rs, .java, .cpp, etc.
 - Documents: .md, .txt, .docx, etc.
@@ -548,7 +542,7 @@ Configure에서 URL을 **추가하는 순간** `graphify.ingest`가 HTTP(S)로 �
 
 
 
-### 마크다운 파일 생성 (Extract)
+#### 마크다운 파일 생성 (Extract)
 
 시맨틱 추출은 **마크다운(또는 일반 텍스트)** 을 입력으로 씁니다. 타입마다 변환 시점이 다르며, 앱 DocGraph Sync는 [`graph/sync_docgraph.py`](./graph/sync_docgraph.py)가 담당합니다. 코드는 md로 바꾸지 않고 AST만 추출합니다.
 
@@ -603,28 +597,7 @@ Source: `{원본경로}`
 
 긴 PDF는 Documents와 같이 ~10KB 청크(`{stem}_partNN.md`) + YAML frontmatter(`source_file`, `chunk`)로 나눕니다. 추출 후 `_rewrite_extract_sources`가 노드·엣지의 `source_file`을 다시 **원본 PDF 경로**로 되돌립니다. 변환본은 디버깅용으로 `{docgraph}/graphify-out/converted/`에 남습니다.
 
-업스트림 CLI/Skill은 PDF를 바이너리로 두고 서브에이전트가 읽게 할 수 있지만, **앱 Sync는 반드시 텍스트 md로 먼저 바꿉니다.**
-
-#### Images — CLI만
-
-- **Skill:** 시맨틱 서브에이전트가 vision으로 “이미지가 무엇인지” 이해해 JSON 추출 (OCR만이 아님).
-- **DocGraph Sync:** `_stage_docs_as_markdown`에서 `.png` / `.jpg` / `.jpeg` / `.webp` / `.gif`를 명시적으로 skip.
-
-#### Video/Audio — CLI만
-
-- **Skill Step 2.5:** `graphify.transcribe.transcribe_all` → **faster-whisper** → `graphify-out/transcripts/*.txt` → docs로 시맨틱 추출.
-- **DocGraph Sync:** `doc_files`에 video 키가 없고 Whisper 호출도 없습니다.
-
-#### URL (참고)
-
-Configure에서 URL 추가 시 `graphify.ingest`: 웹페이지는 `html2text`로 `raw/*.md` 저장, PDF/이미지는 바이너리 저장. Sync는 URL을 다시 fetch하지 않고, 이미 저장된 파일만 위 규칙으로 처리합니다.
-
-#### 한 줄 요약
-
-마크다운 파일 생성(Extract 전처리) = Office는 `detect`에서, PDF/txt/md는 Sync의 `_stage_docs_as_markdown`에서 `graphify-out/converted/`에 모은 뒤 시맨틱 LLM 추출; 코드는 AST만; 이미지·영상 md 변환은 업스트림 Skill/CLI 전용이고 앱 DocGraph Sync는 하지 않습니다.
-
-
-
+업스트림 CLI/Skill은 PDF를 바이너리로 두고 서브에이전트가 읽게 할 수 있지만, 앱 Sync는 반드시 텍스트 md로 먼저 바꿉니다.
 
 
 
@@ -723,82 +696,11 @@ def extract_chunk(files, *, corpus_root, chunk_num, total_chunks, deep=False, mo
 
 증분 시 SHA256 **cache**로 변경 파일만 재추출합니다. 코드만 바뀌면 AST만 돌리고 시맨틱 LLM은 건너뜁니다.
 
----
-
-## 검색하는 방법
-
-채팅에서 graphify **Skill**이 활성화된 경우, 에이전트에게 `/graphify …` 형태의 요청으로 그래프를 질의할 수 있습니다. (폴더 추출·CLI와 동일한 개념의 query / path / explain)
-
-앱 Knowledge Graph HTML의 **문서검색**과는 UI가 다릅니다. 앱 내 검색은 [문서검색](#문서검색)을 보세요.
-
-### 1️⃣ `/graphify query` - 질문으로 검색
-
-가장 기본적인 검색 방법입니다. 자연어로 질문하면 그래프를 탐색해서 답변해줍니다.
-
-```bash
-# 기본 BFS 탐색 (넓게 탐색 - "X는 무엇과 연결되어 있나?")
-/graphify query "RAG는 어떻게 동작하나요?"
-
-# DFS 탐색 (깊게 탐색 - "X에서 Y까지 어떻게 연결되나?")
-/graphify query "인증 모듈이 데이터베이스에 어떻게 연결되나?" --dfs
-
-# 토큰 예산 제한 (기본값 2000)
-/graphify query "트랜스포머 아키텍처란?" --budget 1500
-```
-
-| 모드 | 특징 | 적합한 질문 |
-|------|------|------------|
-| **BFS** (기본) | 넓게 탐색, 가까운 노드부터 | "X는 무엇인가?", "X와 연결된 것은?" |
-| **DFS** (`--dfs`) | 깊게 탐색, 특정 경로 추적 | "X에서 Y까지 어떻게 연결되나?" |
-
-
-### 2️⃣ `/graphify path` - 두 개념 사이의 최단 경로 찾기
-
-두 노드 사이의 연결 경로를 찾아줍니다.
-
-```bash
-/graphify path "AuthModule" "Database"
-/graphify path "RAG" "LLM"
-```
-
-
-### 3️⃣ `/graphify explain` - 특정 개념 설명
-
-특정 노드(개념)에 대한 상세 설명과 연결 관계를 보여줍니다.
-
-```bash
-/graphify explain "SwinTransformer"
-/graphify explain "RAG"
-```
-
-### 데이터 추가
-
-```bash
-/graphify /Documents/Docs --update
-```
-
-### PowerPoint 파일 추가하기
-
-Graphify는 PowerPoint를 직접 지원하지 않으므로 PDF로 변환해 넣습니다. LibreOffice 예:
-
-```bash
-brew install --cask libreoffice
-```
-
-대화창에서 폴더를 지정해 변환을 요청할 수 있습니다.
-
-```bash
-/Downloads/Docs/AgenticAI의 ppt들을 pdf로 변환하세요. 이미 pdf가 있다면 skip 하세요.
-```
-
-
-
-
 
 
 ---
 
-## 문서검색
+### 문서검색
 
 그래프 HTML의 **문서검색**은 좌상단 `Search entities...` 입력에서 Enter로 실행됩니다. 질문 → 관련 노드 탐색 → **소스 파일 본문 excerpt**까지 같은 카드에 보여 줍니다. Knowledge Graph는 `POST /api/graph/query`, DocGraph는 `POST /api/docgraph/query`이며 둘 다 [graph_query.py](./application/graph_query.py)의 `query_user_graph()`를 사용합니다. 기본은 `graph.json` + 원문 파일이며, 시작 노드 선정에 **임베딩 hybrid**를 씁니다(벡터 DB 불필요 — `node_embeddings.json` 사이드카).
 
@@ -817,7 +719,7 @@ brew install --cask libreoffice
 
 게이트웨이: `llm_gateway_url` / `llm_gateway_key`가 있으면 LiteLLM `titan-embed-v2`, 없으면 Bedrock `amazon.titan-embed-text-v2:0` 직접 호출. env `GRAPHIFY_EMBEDDING_MODEL`(기본 `titan-embed-v2`), `GRAPHIFY_EMBEDDING_DIM`(기본 1024).
 
-### Hybrid 동작 (예: 질문 `"날씨"`)
+#### Hybrid 동작 (예: 질문 `"날씨"`)
 
 유사어 목록을 만든 뒤 그 단어들로 **다시 lexical 검색**하는 구조가 **아닙니다**. lexical과 embedding은 둘 다 **시작 노드를 고르는** 단계이고, 그다음 본체는 **그래프 순회**입니다.
 
