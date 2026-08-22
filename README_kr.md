@@ -2,7 +2,7 @@
 
 [English](./README.md)
 
-AI application에서 사내의 중요한 문서를 활용하고자 한다면, 문서안의 그림과 표를 효과적으로 활용하기 위해 우수한 OCR 기능이 필요합니다. 여기에서는 multi modal을 지원하는 LLM을 이용하여 문서로 부터 충분한 정보를 추출하고 이를 knowledge graph로 구현하여 agent로 활용하는 방법을 설명합니다. Knowledge graph의 생성은 OpenAI 공동 창업자이자였던 **Andrej Karpathy**의 LLM Wiki의 개념을 활용하였고, 유사어 성능 향상을 위해 vector embedding을 이용하여 **docgraph**을 구현하였습니다. Agent에서 파일을 업로드하면 multi modal parser를 이용해 OCR하고 knowledge graph를 추출합니다. 이후 사용자의 질문에 따라 MCP를 이용해 관련된 정보를 가져오고 SKILL을 이용해 보고서를 생성할 수 있습니다. Agent framework로 한국에서 가장 많이 사용되고 있는 **LangGraph**를 이용하였고, Web UI는 **FastAPI + React**입니다.
+AI application에서 사내의 중요한 문서를 활용하고자 한다면, 문서안의 그림과 표를 효과적으로 활용하기 위해 우수한 OCR 기능이 필요하고 Agnet를 이용해 활용성을 높여야 합니다. 여기에서는 OpenAI의 GPT모델이 가지는 높은 이미지분석 능력을 이용해 문서로 부터 충분한 정보를 text로 추출하고, 이를 knowledge graph로 구현하여 agent로 활용하는 방법을 설명합니다. Knowledge graph의 생성은 OpenAI 공동 창업자이자였던 **Andrej Karpathy**의 LLM Wiki의 개념을 활용하였고, 유사어 성능 향상을 위해 vector embedding을 이용하여 **docgraph**을 구현하였습니다. Agent에서 파일을 업로드하면 multi modal parser를 이용해 OCR하고 knowledge graph를 추출합니다. 이후 사용자의 질문에 따라 MCP를 이용해 관련된 문서를 graph에서 가져오고, SKILL을 이용해 보고서를 생성할 수 있습니다. Agent framework로 한국에서 가장 많이 사용되고 있는 **LangGraph**를 이용하였고, Web UI는 **FastAPI + React**로 구현하였습니다.
 
 | 구분 | 경로 | 역할 |
 |------|------|------|
