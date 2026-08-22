@@ -96,7 +96,7 @@ export function WikiConfigureModal({ onClose }: Props) {
         if (fileInputRef.current) fileInputRef.current.value = "";
         const names = (result.saved || []).map((s) => s.name).join(", ");
         messages.push(
-          `문서 ${result.count}개를 raw에 저장` +
+          `${result.count} document(s) saved to raw` +
             (names ? ` (${names})` : ""),
         );
       }
@@ -111,9 +111,9 @@ export function WikiConfigureModal({ onClose }: Props) {
         Boolean(saved.foundation_model_parser_enabled),
       );
       if (saved.folders.length > 0) {
-        messages.push(`Source ${saved.folders.length}개 저장`);
+        messages.push(`${saved.folders.length} source(s) saved`);
       } else {
-        messages.push("Sources 비움 (Sync 시 raw 포함)");
+        messages.push("Sources cleared (raw included on Sync)");
       }
       messages.push(
         foundationModelParser
@@ -122,7 +122,7 @@ export function WikiConfigureModal({ onClose }: Props) {
       );
 
       setSuccess(
-        messages.join(". ") + ". Sync를 실행하면 그래프에 반영됩니다.",
+        messages.join(". ") + ". Run Sync to update the graph.",
       );
       onClose();
     } catch (err) {
@@ -158,7 +158,7 @@ export function WikiConfigureModal({ onClose }: Props) {
   async function handleAddUrl() {
     const url = urlInput.trim();
     if (!url) {
-      setError("URL을 입력하세요.");
+      setError("Enter a URL.");
       return;
     }
     setAddingUrl(true);
@@ -168,7 +168,7 @@ export function WikiConfigureModal({ onClose }: Props) {
       const result = await api.ingestWikiUrl(url);
       setUrlInput("");
       setSuccess(
-        `URL을 ${result.path || `${wikiDir || "docgraph"}/raw`}에 저장했습니다.`,
+        `Saved URL to ${result.path || `${wikiDir || "docgraph"}/raw`}.`,
       );
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -210,7 +210,7 @@ export function WikiConfigureModal({ onClose }: Props) {
       <div className="modal wiki-configure-modal">
         <h2 id="wiki-configure-title">DocGraph Configure</h2>
         {loading ? (
-          <p className="llm-gateway-muted">불러오는 중…</p>
+          <p className="llm-gateway-muted">Loading…</p>
         ) : (
           <>
             <label className="wiki-configure-toggle">
@@ -228,7 +228,7 @@ export function WikiConfigureModal({ onClose }: Props) {
               />
             </label>
 
-            <div className="wiki-configure-section-label">문서 추가</div>
+            <div className="wiki-configure-section-label">Add documents</div>
             <div className="wiki-configure-docs">
               <input
                 ref={fileInputRef}
@@ -248,7 +248,7 @@ export function WikiConfigureModal({ onClose }: Props) {
                   disabled={busy || addingUrl}
                   onClick={() => fileInputRef.current?.click()}
                 >
-                  파일 선택…
+                  Choose files…
                 </button>
               </div>
               {pendingDocs.length > 0 ? (
@@ -265,18 +265,18 @@ export function WikiConfigureModal({ onClose }: Props) {
                         type="button"
                         className="wiki-configure-docs-remove"
                         disabled={busy}
-                        aria-label={`${file.name} 제거`}
+                        aria-label={`Remove ${file.name}`}
                         onClick={() => removePendingDoc(index)}
                       >
-                        제거
+                        Remove
                       </button>
                     </li>
                   ))}
                 </ul>
               ) : (
                 <p className="wiki-configure-docs-empty">
-                  파일을 선택한 뒤 하단 <strong>저장</strong>을 누르면
-                  docgraph/raw로 복사됩니다. 이후 Sync로 그래프에 반영하세요.
+                  After choosing files, click <strong>Save</strong> below to
+                  copy them to docgraph/raw. Then Sync to update the graph.
                 </p>
               )}
             </div>
@@ -302,7 +302,7 @@ export function WikiConfigureModal({ onClose }: Props) {
                     Source {index + 1}
                   </span>
                   <span className="wiki-configure-source-path">
-                    {value ? shortPath(value) : "경로 선택…"}
+                    {value ? shortPath(value) : "Choose path…"}
                   </span>
                 </button>
               ))}
@@ -324,7 +324,7 @@ export function WikiConfigureModal({ onClose }: Props) {
                 <input
                   type="url"
                   value={urlInput}
-                  placeholder="예: https://example.com/article"
+                  placeholder="e.g. https://example.com/article"
                   aria-label="URL"
                   disabled={busy || addingUrl}
                   autoComplete="off"
@@ -343,7 +343,7 @@ export function WikiConfigureModal({ onClose }: Props) {
                 disabled={busy || addingUrl || !urlInput.trim()}
                 onClick={() => void handleAddUrl()}
               >
-                {addingUrl ? "저장 중…" : "추가"}
+                {addingUrl ? "Saving…" : "Add"}
               </button>
             </div>
           </>
@@ -361,7 +361,7 @@ export function WikiConfigureModal({ onClose }: Props) {
             disabled={busy || addingUrl}
             onClick={onClose}
           >
-            닫기
+            Close
           </button>
           <button
             type="button"
@@ -369,7 +369,7 @@ export function WikiConfigureModal({ onClose }: Props) {
             disabled={busy || addingUrl || loading}
             onClick={() => void handleSave()}
           >
-            {busy ? "저장 중…" : "저장"}
+            {busy ? "Saving…" : "Save"}
           </button>
         </div>
       </div>
@@ -470,7 +470,7 @@ function SourceFolderMenu({
       ref={menuRef}
       className="wiki-source-menu"
       role="dialog"
-      aria-label={`Source ${index + 1} 폴더 선택`}
+      aria-label={`Select folder for Source ${index + 1}`}
       style={{
         left: position.left,
         top: position.top,
@@ -494,7 +494,7 @@ function SourceFolderMenu({
         <input
           type="text"
           value={pathDraft}
-          placeholder="폴더 경로"
+          placeholder="Folder path"
           autoComplete="off"
           onChange={(e) => setPathDraft(e.target.value)}
           onKeyDown={(e) => {
@@ -509,7 +509,7 @@ function SourceFolderMenu({
           className="modal-btn-secondary"
           onClick={() => void loadBrowse(pathDraft.trim())}
         >
-          이동
+          Go
         </button>
       </div>
       {error ? (
@@ -519,7 +519,7 @@ function SourceFolderMenu({
       ) : null}
       <div className="wiki-source-menu-list">
         {loading ? (
-          <div className="wiki-source-menu-empty">불러오는 중…</div>
+          <div className="wiki-source-menu-empty">Loading…</div>
         ) : (
           <>
             {browse?.parent ? (
@@ -532,7 +532,7 @@ function SourceFolderMenu({
               </button>
             ) : null}
             {(browse?.dirs || []).length === 0 ? (
-              <div className="wiki-source-menu-empty">하위 폴더가 없습니다.</div>
+              <div className="wiki-source-menu-empty">No subfolders.</div>
             ) : (
               browse?.dirs.map((dir) => (
                 <button
@@ -550,7 +550,7 @@ function SourceFolderMenu({
       </div>
       <div className="wiki-source-menu-actions">
         <button type="button" className="modal-btn-secondary" onClick={onClear}>
-          비우기
+          Clear
         </button>
         <button
           type="button"
@@ -560,7 +560,7 @@ function SourceFolderMenu({
             if (browse?.path) onSelect(browse.path);
           }}
         >
-          이 폴더 선택
+          Select this folder
         </button>
       </div>
     </div>,

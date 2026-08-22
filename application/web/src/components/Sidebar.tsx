@@ -31,7 +31,7 @@ import {
 type DrawerKind = "skill" | "mcp" | "model" | "appearance" | "wiki" | "knowledge" | null;
 
 const LLM_GATEWAY_NOT_CONFIGURED =
-  "LLM Gateway가 설정되어 있지 않아 활성화할 수 없습니다. 관리자에게 설정을 요청하세요.";
+  "LLM Gateway is not configured, so it cannot be enabled. Ask an administrator to set it up.";
 
 const THEME_OPTIONS = ["Light", "Dark"] as const;
 const WIKI_OPTIONS = ["Sync", "Graph", "Configure"] as const;
@@ -182,30 +182,30 @@ export function Sidebar({
     if (choice !== "Sync") return;
     setWikiSyncPopupOpen(true);
     setWikiSyncBusy(true);
-    setWikiSyncMessage("DocGraph 동기화를 시작합니다…");
+    setWikiSyncMessage("Starting DocGraph sync…");
     try {
       const result = await api.syncWiki(false);
       const status = result.status;
       if (status === "error") {
         setWikiSyncBusy(false);
-        setWikiSyncMessage(result.error || "DocGraph 동기화에 실패했습니다.");
+        setWikiSyncMessage(result.error || "DocGraph sync failed.");
       } else if (status === "unchanged") {
         setWikiSyncBusy(false);
-        setWikiSyncMessage("변경된 파일이 없습니다.");
+        setWikiSyncMessage("No files changed.");
       } else {
         // Keep syncing indicator; background poll clears it when done.
         setWikiSyncBusy(true);
         setWikiSyncMessage(
           sanitizeSyncMessage(
             result.message,
-            "DocGraph 동기화를 백그라운드에서 실행 중입니다.",
+            "DocGraph sync is running in the background.",
           ),
         );
       }
     } catch (err) {
       setWikiSyncBusy(false);
       setWikiSyncMessage(
-        err instanceof Error ? err.message : "DocGraph 동기화에 실패했습니다.",
+        err instanceof Error ? err.message : "DocGraph sync failed.",
       );
     } finally {
       // Do not open Graph modal — sync continues independently.
@@ -232,39 +232,39 @@ export function Sidebar({
     if (choice !== "Sync") return;
     setKnowledgeSyncPopupOpen(true);
     setKnowledgeSyncBusy(true);
-    setKnowledgeSyncMessage("Knowledge 동기화를 시작합니다…");
+    setKnowledgeSyncMessage("Starting Knowledge sync…");
     try {
       const result = await api.rebuildGraph(false);
       const status = result.status;
       if (status === "error") {
         setKnowledgeSyncBusy(false);
-        setKnowledgeSyncMessage(result.error || "Knowledge 동기화에 실패했습니다.");
+        setKnowledgeSyncMessage(result.error || "Knowledge sync failed.");
       } else if (status === "skipped_cooldown") {
         setKnowledgeSyncBusy(false);
         setKnowledgeSyncMessage(
-          result.message || "잠시 후 다시 동기화할 수 있습니다.",
+          result.message || "You can sync again shortly.",
         );
       } else if (status === "skipped_unchanged") {
         setKnowledgeSyncBusy(false);
-        setKnowledgeSyncMessage(result.message || "변경된 소스가 없습니다.");
+        setKnowledgeSyncMessage(result.message || "No sources changed.");
       } else if (status === "disabled") {
         setKnowledgeSyncBusy(false);
-        setKnowledgeSyncMessage("Knowledge가 Off 상태입니다. On으로 켠 뒤 Sync 하세요.");
+        setKnowledgeSyncMessage("Knowledge is Off. Turn it On, then Sync.");
       } else if (status === "queued" || status === "running") {
         setKnowledgeSyncBusy(true);
         setKnowledgeSyncMessage(
-          result.message || "Knowledge 동기화를 백그라운드에서 실행 중입니다.",
+          result.message || "Knowledge sync is running in the background.",
         );
       } else {
         setKnowledgeSyncBusy(false);
         setKnowledgeSyncMessage(
-          result.message || "Knowledge 동기화가 완료되었습니다.",
+          result.message || "Knowledge sync completed.",
         );
       }
     } catch (err) {
       setKnowledgeSyncBusy(false);
       setKnowledgeSyncMessage(
-        err instanceof Error ? err.message : "Knowledge 동기화에 실패했습니다.",
+        err instanceof Error ? err.message : "Knowledge sync failed.",
       );
     } finally {
       handleSettingApplied();
@@ -285,18 +285,18 @@ export function Sidebar({
           setWikiSyncMessage(
             sanitizeSyncMessage(
               next.message,
-              "DocGraph 동기화를 백그라운드에서 실행 중입니다.",
+              "DocGraph sync is running in the background.",
             ),
           );
           timer = setTimeout(pollWikiSync, 2500);
           return;
         }
         if (next.status === "ready") {
-          setWikiSyncMessage("DocGraph 동기화가 완료되었습니다.");
+          setWikiSyncMessage("DocGraph sync completed.");
         } else if (next.status === "unchanged") {
-          setWikiSyncMessage("변경된 파일이 없습니다.");
+          setWikiSyncMessage("No files changed.");
         } else if (next.status === "error") {
-          setWikiSyncMessage(next.error || "DocGraph 동기화에 실패했습니다.");
+          setWikiSyncMessage(next.error || "DocGraph sync failed.");
         }
       } catch {
         if (cancelled) return;
@@ -326,17 +326,17 @@ export function Sidebar({
         setKnowledgeSyncBusy(busy);
         if (busy) {
           setKnowledgeSyncMessage(
-            next.message || "Knowledge 동기화를 백그라운드에서 실행 중입니다.",
+            next.message || "Knowledge sync is running in the background.",
           );
           timer = setTimeout(pollKnowledgeSync, 2500);
           return;
         }
         if (next.status === "ready") {
           setKnowledgeSyncMessage(
-            next.message || "Knowledge 동기화가 완료되었습니다.",
+            next.message || "Knowledge sync completed.",
           );
         } else if (next.status === "error") {
-          setKnowledgeSyncMessage(next.error || "Knowledge 동기화에 실패했습니다.");
+          setKnowledgeSyncMessage(next.error || "Knowledge sync failed.");
         }
       } catch {
         if (cancelled) return;
@@ -394,12 +394,12 @@ export function Sidebar({
               className={`brand brand-graph-btn${knowledgeGraphEnabled ? "" : " is-disabled"}`}
               title={
                 knowledgeGraphEnabled
-                  ? "Knowledge Graph 보기"
-                  : "Knowledge Graph가 꺼져 있습니다"
+                  ? "View Knowledge Graph"
+                  : "Knowledge Graph is off"
               }
               aria-label={
                 knowledgeGraphEnabled
-                  ? `${brandTitle} Knowledge Graph 보기`
+                  ? `View ${brandTitle} Knowledge Graph`
                   : brandTitle
               }
               aria-disabled={!knowledgeGraphEnabled}
@@ -415,7 +415,7 @@ export function Sidebar({
               <button
                 type="button"
                 className="sidebar-close-btn"
-                aria-label="메뉴 닫기"
+                aria-label="Close menu"
                 onClick={onClose}
               >
                 <CloseIcon className="sidebar-icon" />
@@ -423,8 +423,8 @@ export function Sidebar({
               <button
                 type="button"
                 className="brand-logout-btn"
-                aria-label="나가기"
-                title="나가기"
+                aria-label="Log out"
+                title="Log out"
                 onClick={onLogout}
               >
                 <LogoutIcon className="sidebar-icon" />

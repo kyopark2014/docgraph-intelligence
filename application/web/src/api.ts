@@ -188,7 +188,7 @@ export const api = {
     }),
   uploadWikiRawFiles: async (files: File[]): Promise<WikiRawUploadResult> => {
     if (!files.length) {
-      throw new Error("업로드할 파일이 없습니다.");
+      throw new Error("No files to upload.");
     }
     uiLog("wiki:raw upload start", { count: files.length });
     const form = new FormData();

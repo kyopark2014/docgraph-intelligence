@@ -107,7 +107,7 @@ export function ConfigDrawer({
       <div className="config-popover-header">{title}</div>
       <div className="config-popover-list">
         {options.length === 0 ? (
-          <div className="config-popover-empty">선택할 항목이 없습니다.</div>
+          <div className="config-popover-empty">Nothing to select.</div>
         ) : (
           options.map((option) => {
             const isSelected = selected.includes(option);

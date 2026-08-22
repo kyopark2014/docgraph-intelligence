@@ -112,7 +112,7 @@ export function KnowledgeGraphModal({ userId, title, onClose }: Props) {
         <button
           type="button"
           className="knowledge-graph-close"
-          aria-label="닫기"
+          aria-label="Close"
           onClick={onClose}
         >
           <CloseIcon className="sidebar-icon" />
@@ -129,34 +129,34 @@ export function KnowledgeGraphModal({ userId, title, onClose }: Props) {
             {busy ? (
               <>
                 <p className="knowledge-graph-placeholder-title">
-                  지식 그래프 생성 중
+                  Building knowledge graph
                 </p>
                 <p className="knowledge-graph-placeholder-body">
-                  로그인 후 백그라운드에서 추출하고 있습니다. 잠시만 기다려
-                  주세요.
+                  Extracting in the background after login. Please wait
+                  a moment.
                 </p>
               </>
             ) : status?.status === "error" ? (
               <>
                 <p className="knowledge-graph-placeholder-title">
-                  그래프 생성 실패
+                  Graph build failed
                 </p>
                 <p className="knowledge-graph-placeholder-body">
-                  {status.error || "알 수 없는 오류"}
+                  {status.error || "Unknown error"}
                 </p>
               </>
             ) : pollError ? (
               <>
-                <p className="knowledge-graph-placeholder-title">상태 조회 실패</p>
+                <p className="knowledge-graph-placeholder-title">Failed to load status</p>
                 <p className="knowledge-graph-placeholder-body">{pollError}</p>
               </>
             ) : (
               <>
                 <p className="knowledge-graph-placeholder-title">
-                  Knowledge Graph 없음
+                  No Knowledge Graph
                 </p>
                 <p className="knowledge-graph-placeholder-body">
-                  사용자 그래프 정보가 아직 없습니다. 잠시후 다시 시도하세요
+                  No user graph yet. Try again shortly.
                 </p>
               </>
             )}
@@ -164,7 +164,7 @@ export function KnowledgeGraphModal({ userId, title, onClose }: Props) {
         )}
         {showFrame && (busy || patternBusy) ? (
           <div className="knowledge-graph-banner">
-            {patternBusy ? "패턴 전환 중…" : "그래프 갱신 중…"}
+            {patternBusy ? "Switching pattern…" : "Refreshing graph…"}
           </div>
         ) : null}
       </div>

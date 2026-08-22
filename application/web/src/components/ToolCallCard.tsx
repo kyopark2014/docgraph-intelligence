@@ -6,12 +6,12 @@ interface Props {
 
 function formatToolInput(input: unknown): string {
   if (input === undefined || input === null) {
-    return "(매개변수 없음)";
+    return "(no parameters)";
   }
   if (typeof input === "object" && !Array.isArray(input)) {
     const keys = Object.keys(input as Record<string, unknown>);
     if (keys.length === 0) {
-      return "(매개변수 없음 — 기본값 사용)";
+      return "(no parameters — using defaults)";
     }
   }
   return JSON.stringify(input, null, 2);

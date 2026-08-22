@@ -54,7 +54,7 @@ function loadGsiScript(): Promise<void> {
       existing.addEventListener("load", () => resolve(), { once: true });
       existing.addEventListener(
         "error",
-        () => reject(new Error("Google 로그인 스크립트 로드 실패")),
+        () => reject(new Error("Failed to load Google login script")),
         { once: true },
       );
     });
@@ -66,7 +66,7 @@ function loadGsiScript(): Promise<void> {
     script.async = true;
     script.defer = true;
     script.onload = () => resolve();
-    script.onerror = () => reject(new Error("Google 로그인 스크립트 로드 실패"));
+    script.onerror = () => reject(new Error("Failed to load Google login script"));
     document.head.appendChild(script);
   });
 }
@@ -132,14 +132,14 @@ export function GoogleLoginModal({
       }
       const token = response?.access_token?.trim();
       if (!token) {
-        setScriptError("Google 액세스 토큰을 받지 못했습니다.");
+        setScriptError("Did not receive a Google access token.");
         return;
       }
       if (onAccessToken) {
         onAccessToken(token);
         return;
       }
-      setScriptError("Google 로그인 핸들러가 설정되지 않았습니다.");
+      setScriptError("Google login handler is not configured.");
     },
     [onAccessToken],
   );
@@ -160,9 +160,9 @@ export function GoogleLoginModal({
           error_callback: (err) => {
             if (cancelled) return;
             setBusy(false);
-            const msg = err?.message || err?.type || "Google 로그인 오류";
+            const msg = err?.message || err?.type || "Google login error";
             setScriptError(
-              `${msg}. OAuth 원본에 ${window.location.origin} 등록 여부를 확인하세요.`,
+              `${msg}. Check that ${window.location.origin} is registered as an OAuth origin.`,
             );
           },
         });
@@ -181,11 +181,11 @@ export function GoogleLoginModal({
   function handleGoogleClick() {
     setScriptError(null);
     if (!clientId) {
-      setScriptError("google_client_id가 설정되지 않았습니다.");
+      setScriptError("google_client_id is not configured.");
       return;
     }
     if (!tokenClientRef.current) {
-      setScriptError("Google 로그인을 준비 중입니다. 잠시 후 다시 시도하세요.");
+      setScriptError("Preparing Google login. Please try again shortly.");
       return;
     }
     setBusy(true);
@@ -215,7 +215,7 @@ export function GoogleLoginModal({
       disabled={busy || !clientId}
     >
       <GoogleMark className="auth-google-mark" />
-      <span>{busy ? "Google 연결 중…" : "Google로 계속하기"}</span>
+      <span>{busy ? "Connecting to Google…" : "Continue with Google"}</span>
     </button>
   );
 
@@ -235,27 +235,27 @@ export function GoogleLoginModal({
 
           {showLocalBypass && onLocalUserId ? (
             <>
-              <p className="auth-subtitle">시작하려면 User ID를 입력하세요.</p>
+              <p className="auth-subtitle">Enter a User ID to get started.</p>
               {displayError && <p className="modal-error">{displayError}</p>}
               <form className="local-auth-bypass" onSubmit={handleLocalSubmit}>
                 <label className="auth-field">
                   <span className="auth-field-label">User ID</span>
                   <input
                     name="user_id"
-                    placeholder="예: user01"
+                    placeholder="e.g. user01"
                     autoComplete="username"
                     autoFocus
                     required
                   />
                 </label>
                 <button type="submit" className="auth-primary-btn">
-                  시작하기
+                  Get started
                 </button>
               </form>
               {clientId ? (
                 <>
                   <div className="google-login-divider">
-                    <span>또는</span>
+                    <span>or</span>
                   </div>
                   {googleButton}
                 </>
@@ -263,10 +263,10 @@ export function GoogleLoginModal({
             </>
           ) : (
             <>
-              <p className="auth-subtitle">시작하려면 Google 계정으로 로그인하세요.</p>
+              <p className="auth-subtitle">Sign in with your Google account to get started.</p>
               {displayError && <p className="modal-error">{displayError}</p>}
               {!clientId && (
-                <p className="modal-error">google_client_id가 설정되지 않았습니다.</p>
+                <p className="modal-error">google_client_id is not configured.</p>
               )}
               {googleButton}
             </>

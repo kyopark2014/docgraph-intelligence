@@ -584,7 +584,7 @@ export default function App() {
   }
 
   if (!authReady) {
-    return <div className="boot-loading">불러오는 중…</div>;
+    return <div className="boot-loading">Loading…</div>;
   }
 
   if (!userId) {
@@ -607,7 +607,7 @@ export default function App() {
         <button
           type="button"
           className="sidebar-backdrop"
-          aria-label="메뉴 닫기"
+          aria-label="Close menu"
           onClick={() => setSidebarOpen(false)}
         />
       )}

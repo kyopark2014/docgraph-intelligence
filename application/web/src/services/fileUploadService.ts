@@ -25,22 +25,22 @@ export const fileUploadService = {
       const result = await api.uploadWikiRawFiles(files);
       const names = (result.saved || []).map((s) => s.name).join(", ");
       let message =
-        `문서 ${result.count}개를 docgraph/raw에 업로드했습니다` +
+        `Uploaded ${result.count} document(s) to docgraph/raw` +
         (names ? ` (${names})` : "") +
         ".";
       try {
         const sync = await api.syncWiki(false);
         if (sync.status === "error") {
-          message += ` DocGraph Sync 실패: ${sync.error || "알 수 없는 오류"}`;
+          message += ` DocGraph Sync failed: ${sync.error || "Unknown error"}`;
         } else if (sync.status === "unchanged") {
-          message += " 변경된 파일이 없습니다.";
+          message += " No files changed.";
         } else {
-          message += " DocGraph Sync를 시작합니다.";
+          message += " Starting DocGraph Sync.";
         }
       } catch (syncErr) {
         const detail =
           syncErr instanceof Error ? syncErr.message : String(syncErr);
-        message += ` DocGraph Sync 시작 실패: ${detail}`;
+        message += ` Failed to start DocGraph Sync: ${detail}`;
       }
       return { message };
     } catch (cause) {

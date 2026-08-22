@@ -49,56 +49,56 @@ export function Dashboard({ onBack }: Props) {
       <header className="dashboard-header">
         <div>
           <h1>Dashboard</h1>
-          <p>가입자 현황과 접속 현황</p>
+          <p>Subscribers and access activity</p>
         </div>
         <div className="dashboard-header-actions">
           <button type="button" className="sidebar-menu-btn" onClick={() => void load()}>
-            새로고침
+            Refresh
           </button>
           <button type="button" className="sidebar-menu-btn" onClick={onBack}>
-            채팅으로 돌아가기
+            Back to chat
           </button>
         </div>
       </header>
 
-      {loading && <div className="dashboard-status">불러오는 중…</div>}
+      {loading && <div className="dashboard-status">Loading…</div>}
       {error && <div className="dashboard-error">{error}</div>}
 
       {!loading && !error && summary && (
         <>
           <section className="dashboard-section">
-            <h2>요약</h2>
+            <h2>Summary</h2>
             <div className="dashboard-metrics">
               <div className="dashboard-metric">
-                <span className="dashboard-metric-label">전체 사용자</span>
+                <span className="dashboard-metric-label">Total users</span>
                 <strong>{summary.total_users}</strong>
               </div>
               <div className="dashboard-metric">
-                <span className="dashboard-metric-label">Google 가입</span>
+                <span className="dashboard-metric-label">Google sign-ups</span>
                 <strong>{summary.google_users}</strong>
               </div>
               <div className="dashboard-metric">
-                <span className="dashboard-metric-label">레거시 User ID</span>
+                <span className="dashboard-metric-label">Legacy User ID</span>
                 <strong>{summary.legacy_users}</strong>
               </div>
               <div className="dashboard-metric">
-                <span className="dashboard-metric-label">오늘 로그인</span>
+                <span className="dashboard-metric-label">Logins today</span>
                 <strong>{summary.logins_today}</strong>
               </div>
               <div className="dashboard-metric">
-                <span className="dashboard-metric-label">오늘 접속자</span>
+                <span className="dashboard-metric-label">Unique visitors today</span>
                 <strong>{summary.active_users_today}</strong>
               </div>
               <div className="dashboard-metric">
-                <span className="dashboard-metric-label">7일 로그인</span>
+                <span className="dashboard-metric-label">Logins (7 days)</span>
                 <strong>{summary.logins_7d}</strong>
               </div>
               <div className="dashboard-metric">
-                <span className="dashboard-metric-label">7일 접속자</span>
+                <span className="dashboard-metric-label">Unique visitors (7 days)</span>
                 <strong>{summary.active_users_7d}</strong>
               </div>
               <div className="dashboard-metric">
-                <span className="dashboard-metric-label">태스크 / 메시지</span>
+                <span className="dashboard-metric-label">Tasks / messages</span>
                 <strong>
                   {summary.total_tasks} / {summary.total_messages}
                 </strong>
@@ -107,17 +107,17 @@ export function Dashboard({ onBack }: Props) {
           </section>
 
           <section className="dashboard-section">
-            <h2>일별 접속 (최근 14일)</h2>
+            <h2>Daily access (last 14 days)</h2>
             {stats.daily_logins.length === 0 ? (
-              <p className="dashboard-empty">아직 기록된 로그인이 없습니다.</p>
+              <p className="dashboard-empty">No login records yet.</p>
             ) : (
               <div className="dashboard-table-wrap">
                 <table className="dashboard-table">
                   <thead>
                     <tr>
-                      <th>날짜</th>
-                      <th>로그인 수</th>
-                      <th>고유 사용자</th>
+                      <th>Date</th>
+                      <th>Logins</th>
+                      <th>Unique users</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -135,19 +135,19 @@ export function Dashboard({ onBack }: Props) {
           </section>
 
           <section className="dashboard-section">
-            <h2>가입자 현황</h2>
+            <h2>Subscribers</h2>
             <div className="dashboard-table-wrap">
               <table className="dashboard-table">
                 <thead>
                   <tr>
-                    <th>사용자</th>
-                    <th>인증</th>
-                    <th>태스크</th>
-                    <th>메시지</th>
-                    <th>로그인</th>
-                    <th>최초 활동</th>
-                    <th>최근 활동</th>
-                    <th>최근 로그인</th>
+                    <th>User</th>
+                    <th>Auth</th>
+                    <th>Tasks</th>
+                    <th>Messages</th>
+                    <th>Logins</th>
+                    <th>First activity</th>
+                    <th>Last activity</th>
+                    <th>Last login</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -169,20 +169,20 @@ export function Dashboard({ onBack }: Props) {
           </section>
 
           <section className="dashboard-section">
-            <h2>최근 접속</h2>
+            <h2>Recent access</h2>
             {stats.recent_logins.length === 0 ? (
               <p className="dashboard-empty">
-                로그인 이벤트는 Google(또는 로컬 우회) 로그인 시점부터 기록됩니다.
+                Login events are recorded from Google (or local bypass) sign-in.
               </p>
             ) : (
               <div className="dashboard-table-wrap">
                 <table className="dashboard-table">
                   <thead>
                     <tr>
-                      <th>시각</th>
-                      <th>사용자</th>
-                      <th>이름</th>
-                      <th>방식</th>
+                      <th>Time</th>
+                      <th>User</th>
+                      <th>Name</th>
+                      <th>Method</th>
                     </tr>
                   </thead>
                   <tbody>

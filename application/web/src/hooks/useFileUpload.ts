@@ -120,7 +120,7 @@ export function useFileUpload({ disabled = false }: UseFileUploadOptions = {}) {
     } catch (err) {
       URL.revokeObjectURL(previewUrl);
       console.error("Image upload failed", err);
-      setUploadError("이미지 업로드에 실패했습니다. 다시 시도해 주세요.");
+      setUploadError("Image upload failed. Please try again.");
     } finally {
       setUploading(false);
     }
@@ -146,7 +146,7 @@ export function useFileUpload({ disabled = false }: UseFileUploadOptions = {}) {
         onComplete?.(result.message);
       } catch (err) {
         console.error("DocGraph document upload failed", err);
-        setUploadError("DocGraph 업로드에 실패했습니다. 다시 시도해 주세요.");
+        setUploadError("DocGraph upload failed. Please try again.");
       } finally {
         setUploading(false);
       }

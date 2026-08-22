@@ -30,7 +30,7 @@ export function SyncProgressModal({ title, busy, message, onClose }: Props) {
 
   const display =
     message?.trim() ||
-    (busy ? "동기화를 진행하고 있습니다…" : "동기화가 완료되었습니다.");
+    (busy ? "Sync in progress…" : "Sync completed.");
 
   return createPortal(
     <div
@@ -50,7 +50,7 @@ export function SyncProgressModal({ title, busy, message, onClose }: Props) {
             <button
               type="button"
               className="sync-progress-close"
-              aria-label="닫기"
+              aria-label="Close"
               onClick={onClose}
             >
               ×
@@ -69,8 +69,8 @@ export function SyncProgressModal({ title, busy, message, onClose }: Props) {
           <p className="sync-progress-message">{display}</p>
           {busy && (
             <p className="sync-progress-hint">
-              완료될 때까지 이 창을 유지하거나, 사이드바의 Syncing 표시로
-              진행 상태를 확인할 수 있습니다.
+              Keep this window open until finished, or check the Syncing
+              indicator in the sidebar.
             </p>
           )}
         </div>
@@ -82,7 +82,7 @@ export function SyncProgressModal({ title, busy, message, onClose }: Props) {
               className="sync-progress-btn is-secondary"
               onClick={onClose}
             >
-              백그라운드로 계속
+              Continue in background
             </button>
           ) : (
             <button
@@ -90,7 +90,7 @@ export function SyncProgressModal({ title, busy, message, onClose }: Props) {
               className="sync-progress-btn"
               onClick={onClose}
             >
-              확인
+              OK
             </button>
           )}
         </div>

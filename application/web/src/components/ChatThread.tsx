@@ -65,7 +65,7 @@ export function ChatThread({
         <button
           type="button"
           className="menu-btn"
-          aria-label="메뉴 열기"
+          aria-label="Open menu"
           onClick={onMenuClick}
         >
           <MenuIcon className="sidebar-icon" />
@@ -76,8 +76,8 @@ export function ChatThread({
         <div className="chat-thread">
           {messages.length === 0 && !streaming && (
             <div className="empty-state">
-              <p>DocGraph Intelligence 기반 에이전트입니다.</p>
-              <p>메뉴에서 Skill, MCP, Model을 설정하고 대화를 시작하세요.</p>
+              <p>An agent powered by DocGraph Intelligence.</p>
+              <p>Configure Skill, MCP, and Model in the menu, then start chatting.</p>
             </div>
           )}
           {messages.map((m) => (

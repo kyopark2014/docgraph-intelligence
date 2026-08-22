@@ -111,7 +111,7 @@ export function WikiGraphModal({ title = "DocGraph", onClose }: Props) {
         <button
           type="button"
           className="knowledge-graph-close"
-          aria-label="닫기"
+          aria-label="Close"
           onClick={onClose}
         >
           <CloseIcon className="sidebar-icon" />
@@ -128,31 +128,31 @@ export function WikiGraphModal({ title = "DocGraph", onClose }: Props) {
             {busy ? (
               <>
                 <p className="knowledge-graph-placeholder-title">
-                  DocGraph 동기화 중
+                  Syncing DocGraph
                 </p>
                 <p className="knowledge-graph-placeholder-body">
-                  DocGraph 코퍼스를 graphify로 추출하고 있습니다.
+                  Extracting the DocGraph corpus with graphify.
                 </p>
               </>
             ) : status?.status === "error" ? (
               <>
                 <p className="knowledge-graph-placeholder-title">
-                  DocGraph 동기화 실패
+                  DocGraph sync failed
                 </p>
                 <p className="knowledge-graph-placeholder-body">
-                  {status.error || "알 수 없는 오류"}
+                  {status.error || "Unknown error"}
                 </p>
               </>
             ) : pollError ? (
               <>
-                <p className="knowledge-graph-placeholder-title">상태 조회 실패</p>
+                <p className="knowledge-graph-placeholder-title">Failed to load status</p>
                 <p className="knowledge-graph-placeholder-body">{pollError}</p>
               </>
             ) : (
               <>
-                <p className="knowledge-graph-placeholder-title">DocGraph 없음</p>
+                <p className="knowledge-graph-placeholder-title">No DocGraph</p>
                 <p className="knowledge-graph-placeholder-body">
-                  Settings → DocGraph → Sync로 먼저 동기화하세요
+                  Sync first via Settings → DocGraph → Sync
                   {status?.docgraph_dir ? ` (${status.docgraph_dir})` : ""}.
                 </p>
               </>
@@ -161,7 +161,7 @@ export function WikiGraphModal({ title = "DocGraph", onClose }: Props) {
         )}
         {showFrame && (busy || patternBusy) ? (
           <div className="knowledge-graph-banner">
-            {patternBusy ? "패턴 전환 중…" : "DocGraph 동기화 중…"}
+            {patternBusy ? "Switching pattern…" : "Syncing DocGraph…"}
           </div>
         ) : null}
       </div>

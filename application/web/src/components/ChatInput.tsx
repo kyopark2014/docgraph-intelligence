@@ -283,9 +283,9 @@ export function ChatInput({
                 </svg>
               </span>
               <span className="chat-add-menu-text">
-                <span className="chat-add-menu-label">사진 첨부</span>
+                <span className="chat-add-menu-label">Attach photo</span>
                 <span className="chat-add-menu-desc">
-                  이미지를 첨부하거나 Ctrl/⌘+V로 붙여넣기
+                  Attach an image or paste with Ctrl/⌘+V
                 </span>
               </span>
             </button>
@@ -315,7 +315,7 @@ export function ChatInput({
               <span className="chat-add-menu-text">
                 <span className="chat-add-menu-label">Upload to DocGraph</span>
                 <span className="chat-add-menu-desc">
-                  docgraph/raw에 업로드하고 DocGraph Sync
+                  Upload to docgraph/raw and Sync DocGraph
                 </span>
               </span>
             </button>
@@ -333,13 +333,13 @@ export function ChatInput({
       )}
       {uploading && (
         <div className="chat-upload-status" role="status">
-          업로드 중...
+          Uploading...
         </div>
       )}
       {queuedMessages.length > 0 && (
         <div
           className={`chat-queue-panel${queuePaused ? " is-paused" : ""}`}
-          aria-label="대기 중인 메시지"
+          aria-label="Queued messages"
         >
           {queuePaused && (
             <div className="chat-queue-header">
@@ -360,8 +360,8 @@ export function ChatInput({
               const label =
                 item.text.trim() ||
                 (item.files.length > 0
-                  ? `첨부 ${item.files.length}개`
-                  : "메시지");
+                  ? `${item.files.length} attachment(s)`
+                  : "Message");
               return (
                 <li key={item.id} className="chat-queue-item">
                   <span className="chat-queue-text" title={label}>
@@ -371,8 +371,8 @@ export function ChatInput({
                     <button
                       type="button"
                       className="chat-queue-steer"
-                      title="진행 중인 응답을 멈추고 이 메시지로 전환"
-                      aria-label={`이 메시지로 전환: ${label}`}
+                      title="Stop the current response and switch to this message"
+                      aria-label={`Switch to this message: ${label}`}
                       onClick={() => onSteerQueued?.(item.id)}
                     >
                       <svg
@@ -394,7 +394,7 @@ export function ChatInput({
                     <button
                       type="button"
                       className="chat-queue-remove"
-                      aria-label={`대기 메시지 삭제: ${label}`}
+                      aria-label={`Remove queued message: ${label}`}
                       onClick={() => onRemoveQueued?.(item.id)}
                     >
                       <svg
@@ -450,14 +450,14 @@ export function ChatInput({
           aria-hidden="true"
         />
         {attachments.length > 0 && (
-          <div className="chat-attachments" aria-label="첨부 이미지">
+          <div className="chat-attachments" aria-label="Attached images">
             {attachments.map((item) => (
               <div key={item.url} className="chat-attachment">
                 <img src={item.previewUrl} alt={item.name} />
                 <button
                   type="button"
                   className="chat-attachment-remove"
-                  aria-label={`${item.name} 제거`}
+                  aria-label={`Remove ${item.name}`}
                   onClick={() => removeAttachment(item.url)}
                   disabled={inputDisabled}
                 >
@@ -471,7 +471,7 @@ export function ChatInput({
           ref={textareaRef}
           className="chat-input"
           rows={1}
-          placeholder="메시지를 입력하거나 이미지를 붙여넣으세요..."
+          placeholder="Enter a message or paste an image..."
           value={value}
           disabled={inputDisabled}
           onChange={(e) => setValue(e.target.value)}
@@ -488,12 +488,12 @@ export function ChatInput({
               className={showInputSteer ? "chat-steer-btn" : "chat-add-btn"}
               aria-label={
                 showInputSteer
-                  ? "진행 중인 응답을 멈추지 않고 대기열에 추가"
-                  : "추가"
+                  ? "Add to queue without stopping the current response"
+                  : "Add"
               }
               title={
                 showInputSteer
-                  ? "진행 중인 응답을 멈추지 않고 대기열에 추가"
+                  ? "Add to queue without stopping the current response"
                   : undefined
               }
               aria-expanded={showInputSteer ? undefined : menuOpen}
@@ -532,7 +532,7 @@ export function ChatInput({
             <button
               className="chat-send-btn is-waiting"
               type="button"
-              aria-label="응답 중지"
+              aria-label="Stop response"
               aria-busy="true"
               onClick={() => onStop?.()}
             >
@@ -543,7 +543,7 @@ export function ChatInput({
             <button
               className="chat-send-btn"
               type="submit"
-              aria-label="전송"
+              aria-label="Send"
               disabled={!canSend}
             >
               <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">

@@ -20,7 +20,7 @@ export function stabilizeMessageKeys(prev: Message[], next: Message[]): Message[
 }
 
 export function buildDisplayPrompt(prompt: string, files: string[]): string {
-  return prompt.trim() || (files.length > 0 ? "첨부한 이미지를 분석해주세요." : "");
+  return prompt.trim() || (files.length > 0 ? "Please analyze the attached image." : "");
 }
 
 export function buildOptimisticUserMessage(
