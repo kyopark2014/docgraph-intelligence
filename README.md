@@ -41,12 +41,10 @@ Raw data ingestion → LLM compiles & maintains DocGraph / Knowledge Graph → Q
 3. [LLM Wiki vs RAG](#️-llm-wiki-vs-rag--when-to-use-which)
 4. [graphify](#graphify) — corpus → graph pipeline
 5. [Graph](#graph) — dual graphs · visualization patterns
-6. [How to Search](#how-to-search) — `/graphify` CLI
-7. [Document search](#document-search) — Ask panel · Agent MCP
-8. [Message Trim](#message-trim)
-9. [How to Run](#how-to-run)
-10. [Execution Results](#execution-results)
-11. [Reference](#reference)
+6. [Document search](#document-search) — Ask panel · Agent MCP
+7. [How to Run](#how-to-run)
+8. [Execution Results](#execution-results)
+9. [Reference](#reference)
 
 ---
 
@@ -167,7 +165,7 @@ flowchart TB
 | DocGraph | Settings → **DocGraph** → Sync / Graph / Configure |
 | Settings | Knowledge Graph on/off, `graph_pattern`, and other user settings |
 
-The Agent runs a ReAct loop with MCP tools and Skill instructions. Long chats use [Message Trim](#message-trim) so only the last N turns go to the LLM context.
+The Agent runs a ReAct loop with MCP tools and Skill instructions. Long chats trim the LLM context to the last N turns.
 
 ---
 
@@ -397,74 +395,6 @@ Holistic View graph:
 
 ---
 
-## How to Search
-
-With the graphify **Skill** enabled in chat, you can ask the agent `/graphify …` style requests (same query / path / explain ideas as folder extract · CLI).
-
-This is a different UI from **Document search** in the Knowledge Graph HTML. For the in-app panel, see [Document search](#document-search).
-
-### 1️⃣ `/graphify query` - Search by Question
-
-The most basic search method. Ask in natural language; the tool traverses the graph to answer.
-
-```bash
-# Default BFS traversal (broad search - "What is X connected to?")
-/graphify query "How does RAG work?"
-
-# DFS traversal (deep search - "How does X connect to Y?")
-/graphify query "How does the auth module connect to the database?" --dfs
-
-# Token budget limit (default 2000)
-/graphify query "What is transformer architecture?" --budget 1500
-```
-
-| Mode | Characteristics | Best For |
-|------|----------------|----------|
-| **BFS** (default) | Broad traversal, starting from nearest nodes | "What is X?", "What is connected to X?" |
-| **DFS** (`--dfs`) | Deep traversal, traces specific paths | "How does X connect to Y?" |
-
-
-### 2️⃣ `/graphify path` - Find the Shortest Path Between Two Concepts
-
-Finds the connection path between two nodes.
-
-```bash
-/graphify path "AuthModule" "Database"
-/graphify path "RAG" "LLM"
-```
-
-
-### 3️⃣ `/graphify explain` - Explain a Specific Concept
-
-Shows a detailed explanation and connections for a specific node (concept).
-
-```bash
-/graphify explain "SwinTransformer"
-/graphify explain "RAG"
-```
-
-### Adding data
-
-```bash
-/graphify /Documents/Docs --update
-```
-
-### Adding PowerPoint files
-
-Graphify does not support PowerPoint directly — convert to PDF first. LibreOffice example:
-
-```bash
-brew install --cask libreoffice
-```
-
-You can also ask in chat to convert a folder:
-
-```bash
-Convert the AgentAI ppts under /Downloads/Docs/AgenticAI to PDF. Skip if a PDF already exists.
-```
-
----
-
 ## Document search
 
 ### Agent MCP (graph memory · docgraph)
@@ -506,120 +436,6 @@ Document search finds related nodes from start nodes:
 And pulls related passages from the corpus:
 
 <img width="368" height="451" alt="image" src="https://github.com/user-attachments/assets/00f5d8cf-c0ac-427f-b1e5-6ace6ba1daca" />
-
----
-
-## Message Trim
-
-Keeps the LLM context bounded on long chats. The LangGraph agent (`call_model` in [application/langgraph_agent.py](./application/langgraph_agent.py)) keeps only the **last N HumanMessage turns** right before the LLM call. Messages in LangGraph state / the checkpointer stay intact; only the messages sent to the model are trimmed. Applies for both `history_mode=Enable` and `Disable`.
-
-**Default:** `MAX_CONTEXT_TURNS = 5` (same “last 5 turns” intent as `SimpleMemory(k=5)` in plain chat)
-
-**How to change:**
-
-- Edit `MAX_CONTEXT_TURNS` in [application/langgraph_agent.py](./application/langgraph_agent.py)
-- Or set `max_turns` / `configurable.max_turns` in the config from `create_agent()`
-- `max_turns=0` disables trim
-
-```python
-# application/langgraph_agent.py
-MAX_CONTEXT_TURNS = 5
-
-
-def trim_messages_by_human_turns(messages: list, max_turns: int) -> list:
-    """Keep messages from the last N HumanMessage turns (inclusive)."""
-    if max_turns <= 0 or not messages:
-        return messages
-
-    human_indices = [i for i, msg in enumerate(messages) if isinstance(msg, HumanMessage)]
-    if len(human_indices) <= max_turns:
-        return messages
-
-    return messages[human_indices[-max_turns]:]
-```
-
-In `call_model`, ToolMessage content is normalized, then trim runs:
-
-```python
-# application/langgraph_agent.py — inside call_model()
-        max_turns = (
-            config.get("configurable", {}).get("max_turns")
-            or config.get("max_turns")
-            or MAX_CONTEXT_TURNS
-        )
-        trimmed = trim_messages_by_human_turns(messages, max_turns)
-        if len(trimmed) < len(messages):
-            logger.info(
-                f"trimmed messages from {len(messages)} to {len(trimmed)} "
-                f"(max_turns={max_turns})"
-            )
-            messages = trimmed
-
-        prompt = ChatPromptTemplate.from_messages([
-            ("system", system),
-            MessagesPlaceholder(variable_name="messages"),
-        ])
-        chain = prompt | model
-        async for chunk in chain.astream({"messages": messages}):
-            ...
-```
-
-`create_agent()` always passes `max_turns`, regardless of `history_mode`:
-
-```python
-# application/langgraph_agent.py — create_agent()
-    if history_mode == "Enable":
-        app = buildChatAgentWithHistory(tools)
-        config = {
-            "recursion_limit": 100,
-            "configurable": {"thread_id": user_id},
-            "tools": tools,
-            "system_prompt": system_prompt,
-            "max_turns": MAX_CONTEXT_TURNS,
-        }
-    else:
-        app = buildChatAgent(tools)
-        config = {
-            "recursion_limit": 100,
-            "configurable": {"thread_id": user_id},
-            "tools": tools,
-            "system_prompt": system_prompt,
-            "max_turns": MAX_CONTEXT_TURNS,
-        }
-```
-
-**What `max_turns=5` means**
-
-- Keep **5 user HumanMessages** plus **all follow-up messages** in each turn
-- One turn = one `HumanMessage` + subsequent `AIMessage`, `ToolMessage`, and tool feedback loops
-- Multiple tool calls still count as **one turn** for the same user question
-
-**Example (with tools)**
-
-```
-Human(Q1) → AI(tool_calls) → ToolMessage → AI(A1)
-Human(Q2) → AI(A2)
-Human(Q3) → AI(tool_calls) → ToolMessage → AI(A3)
-```
-
-With `max_turns=2`, keep from **Q2** onward:
-
-```
-Human(Q2) → AI(A2) → Human(Q3) → AI(tool_calls) → ToolMessage → AI(A3)
-```
-
-**vs trimming by message count**
-
-| Approach | When `N=5` |
-|----------|------------|
-| Previous (message count) | Keep only 5 message objects → user-turn count becomes irregular because of tool loops |
-| Current (HumanMessage turns) | Keep 5 user questions + full AI/Tool responses per turn |
-
-**Relation to the checkpointer**
-
-- With `history_mode=Enable`, `MemorySaver` still stores the **full** conversation.
-- Trim is only for the LLM context window; it does not delete saved history.
-- Logs show `trimmed messages from X to Y (max_turns=5)` when trim runs.
 
 ---
 
