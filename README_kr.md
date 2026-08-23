@@ -871,7 +871,8 @@ uvicorn application.server:app --host 0.0.0.0 --port 8501
 
 이제 아래와 같이 "What is the reasmoning of agent?"라고 입력하면 DocGraph로 추출된 graph 기반으로 아래와 같은 답변을 얻을 수 있습니다.
 
-<img width="918" height="601" alt="image" src="https://github.com/user-attachments/assets/0b026b5a-d3ed-4d75-aa17-9e8509635117" />
+
+<img width="916" height="638" alt="image" src="https://github.com/user-attachments/assets/256e14ca-ba01-48c5-8179-a1525dc88181" />
 
 실제 여기서 사용된 graph 정보는 아래와 같습니다.
 
