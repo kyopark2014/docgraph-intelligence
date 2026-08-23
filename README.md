@@ -869,17 +869,17 @@ uvicorn application.server:app --host 0.0.0.0 --port 8501
 
 ## Execution Results
 
-Enable DocGraph MCP (`docgraph`) as shown below.
+Enable DocGraph MCP (`docgraph`) as shown below. Also enable the graph memory MCP as long-term memory when needed.
 
-<img width="251" height="286" alt="image" src="https://github.com/user-attachments/assets/65f50586-7531-460a-8b63-5a33adfdd9ba" />
+<img width="202" height="247" alt="image" src="https://github.com/user-attachments/assets/2016dfe2-270b-40d0-8219-e29c10cddf18" />
 
-Then enter "Investigate T-Box with docgraph." and check the result.
+Ask something like "What is the reasmoning of agent?" and you get an answer grounded in the graph extracted by DocGraph, as shown below.
 
-<img width="921" height="760" alt="image" src="https://github.com/user-attachments/assets/9ac17473-f301-4e86-9599-a6ede97043ca" />
+<img width="918" height="601" alt="image" src="https://github.com/user-attachments/assets/0b026b5a-d3ed-4d75-aa17-9e8509635117" />
 
-After asking "Investigate reasoning with docgraph." the result looks like this:
+The graph information actually used here looks like this:
 
-<img width="925" height="768" alt="image" src="https://github.com/user-attachments/assets/a2915115-69c3-4335-a4d7-b12651c8ad42" />
+<img width="866" height="538" alt="image" src="https://github.com/user-attachments/assets/e9ff6b41-2368-482e-92cd-422efa9ca86a" />
 
 ---
 
