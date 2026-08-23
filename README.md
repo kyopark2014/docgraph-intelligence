@@ -720,14 +720,14 @@ Graph HTML **Document search** runs from the top-left `Search entities...` input
    - Tokenize query (English ≥3 chars, CJK ≥2 chars).
    - Partial match on node **label** for top candidates.
    - Even when label is empty (or to supplement), boost score when query terms appear in `source_file` **body** — e.g. English labels with Korean query.
-   - **Embedding**: Compare question·node label vectors with LiteLLM `titan-embed-v2` (Bedrock Titan Text Embeddings V2) (cosine ≥ 0.35). Catches synonyms like `날씨` ↔ `Weather` without label partial match. `out/node_embeddings.json` built at publish/`republish`; lazy rebuild on query if missing or stale. Lexical only if gateway unset·fails.
+   - **Embedding**: Compare question and node label vectors with an embedding model (cosine ≥ 0.35). Catches synonyms like `날씨` ↔ `Weather` without label partial match. `out/node_embeddings.json` built at publish/`republish`; lazy rebuild on query if missing or stale. Lexical only if gateway unset·fails.
 4. **Graph traversal** — Default **BFS** (depth 3), optional **DFS** (depth 6). Collect related nodes·edges, sort by relevance, truncate with token `budget`.
 5. **Source excerpt** — Read matching nodes' `source_file` only inside allowed roots; show paragraphs overlapping query·label·`source_location` in panel.
 6. **Graph highlight** — Raise response node opacity; chip click `focus`es that node.
 
-**Embedding config:** Titan embedding hybrid (vector search) in document search only when `application/config.json` **`hybrid_graph_search`** is `"enable"`. Any other value (or unset) uses lexical only. Current default is `"enable"`.
+**Embedding config:** Embedding hybrid (vector search) in document search only when `application/config.json` **`hybrid_graph_search`** is `"enable"`. Any other value (or unset) uses lexical only. Current default is `"enable"`.
 
-Gateway: LiteLLM `titan-embed-v2` when `llm_gateway_url` / `llm_gateway_key` set; otherwise direct Bedrock `amazon.titan-embed-text-v2:0`. env `GRAPHIFY_EMBEDDING_MODEL` (default `titan-embed-v2`), `GRAPHIFY_EMBEDDING_DIM` (default 1024).
+The embedding model is configurable via LiteLLM gateway, `application/config.json`, and environment variables (`GRAPHIFY_EMBEDDING_MODEL`, `GRAPHIFY_EMBEDDING_DIM`) so you can match your deployment.
 
 #### Hybrid Behavior (example: query `"날씨"`)
 
@@ -746,7 +746,7 @@ Query "날씨"
 
 2. **Embedding (semantic similarity)** — parallel supplement, not follow-up lexical  
    - Load `node_embeddings.json` (node label vectors) from publish (lazy rebuild if missing/stale).  
-   - Embed query `"날씨"` **once** via LiteLLM.  
+   - Embed query `"날씨"` **once** with the configured embedding model.  
    - Cosine compare all node vectors (≥ 0.35), top-k **merged** with lexical results.  
    - No step that builds `"weather"` via synonym dict·translation then re-matches labels. Picks **existing node IDs** where vectors are close, e.g. `날씨` ↔ `Weather Forecast`.
 

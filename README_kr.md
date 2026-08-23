@@ -716,14 +716,14 @@ def extract_chunk(files, *, corpus_root, chunk_num, total_chunks, deep=False, mo
    - 질문을 토큰화(영문 ≥3자, CJK ≥2자).
    - 노드 **label** 부분 일치로 상위 후보 선정.
    - label이 비어도(또는 보강용으로) 노드의 `source_file` **본문**에 질의어가 있으면 점수를 올려 시작 노드로 사용 — 라벨은 영어인데 질의가 한국어인 경우 등.
-   - **임베딩**: LiteLLM `titan-embed-v2`(Bedrock Titan Text Embeddings V2)로 질문·노드 label 벡터를 비교(코사인 ≥ 0.35). `날씨` ↔ `Weather` 같은 유사어를 label 부분일치 없이도 시작 노드로 잡습니다. publish/`republish` 시 `out/node_embeddings.json`을 만들고, 없거나 stale이면 query 때 lazy rebuild. 게이트웨이 미설정·실패 시 lexical만 사용.
+   - **임베딩**: 질문·노드 label 벡터를 embedding 모델로 비교(코사인 ≥ 0.35). `날씨` ↔ `Weather` 같은 유사어를 label 부분일치 없이도 시작 노드로 잡습니다. publish/`republish` 시 `out/node_embeddings.json`을 만들고, 없거나 stale이면 query 때 lazy rebuild. 게이트웨이 미설정·실패 시 lexical만 사용.
 4. **그래프 순회** — 기본 **BFS**(깊이 3), 옵션 **DFS**(깊이 6). 관련 노드·엣지를 모은 뒤 relevance로 정렬하고 token `budget`으로 truncate.
 5. **소스 excerpt** — 매칭 노드의 `source_file`을 허용 루트 안에서만 읽고, 질의어·라벨·`source_location`이 겹치는 문단을 패널에 표시합니다.
 6. **그래프 하이라이트** — 응답 노드 opacity를 올리고, 칩 클릭 시 해당 노드로 `focus`합니다.
 
-**임베딩 설정:** `application/config.json`의 **`hybrid_graph_search`**가 `"enable"`일 때만 문서검색에 Titan 임베딩 hybrid(vector search)를 켭니다. 그 외 값(또는 미설정)이면 lexical만 사용합니다. 현재 기본값은 `"enable"`입니다.
+**임베딩 설정:** `application/config.json`의 **`hybrid_graph_search`**가 `"enable"`일 때만 문서검색에 embedding hybrid(vector search)를 켭니다. 그 외 값(또는 미설정)이면 lexical만 사용합니다. 현재 기본값은 `"enable"`입니다.
 
-게이트웨이: `llm_gateway_url` / `llm_gateway_key`가 있으면 LiteLLM `titan-embed-v2`, 없으면 Bedrock `amazon.titan-embed-text-v2:0` 직접 호출. env `GRAPHIFY_EMBEDDING_MODEL`(기본 `titan-embed-v2`), `GRAPHIFY_EMBEDDING_DIM`(기본 1024).
+임베딩 모델은 LiteLLM gateway·`application/config.json`·환경 변수(`GRAPHIFY_EMBEDDING_MODEL`, `GRAPHIFY_EMBEDDING_DIM`)로 설정할 수 있으며, 사용자 환경에 맞게 바꿀 수 있습니다.
 
 #### Hybrid 동작 (예: 질문 `"날씨"`)
 
@@ -742,7 +742,7 @@ def extract_chunk(files, *, corpus_root, chunk_num, total_chunks, deep=False, mo
 
 2. **Embedding (의미 유사도)** — 후속 lexical이 아니라 **병렬 보강**  
    - publish 때 만들어 둔 `node_embeddings.json`(노드 label 벡터)을 로드(없거나 stale이면 lazy rebuild).  
-   - 질문 `"날씨"`만 LiteLLM으로 **한 번** 임베딩.  
+   - 질문 `"날씨"`를 설정된 embedding 모델로 **한 번** 임베딩.  
    - 모든 노드 벡터와 코사인 비교(≥ 0.35), top-k를 lexical 결과에 **합침**.  
    - 동의어 사전·번역으로 `"weather"`를 만든 뒤 label을 다시 치는 단계가 **없음**. `날씨` ↔ `Weather Forecast`처럼 **벡터가 가까운 기존 노드 ID를 직접** 고름.
 
