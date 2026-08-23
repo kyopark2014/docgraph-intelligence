@@ -875,7 +875,7 @@ Enable DocGraph MCP (`docgraph`) as shown below. Also enable the graph memory MC
 
 Ask something like "What is the reasmoning of agent?" and you get an answer grounded in the graph extracted by DocGraph, as shown below.
 
-<img width="918" height="601" alt="image" src="https://github.com/user-attachments/assets/0b026b5a-d3ed-4d75-aa17-9e8509635117" />
+<img width="916" height="638" alt="image" src="https://github.com/user-attachments/assets/256e14ca-ba01-48c5-8179-a1525dc88181" />
 
 The graph information actually used here looks like this:
 
