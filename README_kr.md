@@ -586,7 +586,7 @@ Sources / raw
 DocGraph Configure에서 **Foundation Model Parser**를 **On**하면 (기본 Off) rag-multimodal과 같은 멀티모달 경로를 씁니다.
 
 1. **PyMuPDF**로 페이지 PNG 렌더 (`page_001.png` …) → `{wiki}/graphify-out/converted/.pdf_pages/{stem}_{hash}/pages/`
-2. 각 이미지를 멀티모달 LLM(OpenAI/gateway)으로 Markdown 변환 (`mcp_server_text_extraction` · img2text 프롬프트)
+2. 각 이미지를 멀티모달 LLM(OpenAI/gateway)으로 Markdown 변환 (`graph/lib/img2text.py` · img2text 프롬프트)
 3. **페이지마다** `.pdf_pages/.../extracted.md`에 `## Page N`을 append(+fsync). Sync가 중간에 끊겨도 다음 Sync에서 이어서 처리(이미 끝난 페이지·PNG는 skip)
 4. 전부 끝나면 `converted/{stem}.md`(또는 `_partNN.md`)로 stage. 실패 시(부분 md 없을 때만) classical(pdfplumber/pypdf)로 fallback
 

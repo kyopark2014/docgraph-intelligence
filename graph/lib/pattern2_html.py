@@ -74,13 +74,13 @@ def _node_description(G: nx.Graph, node_id: str) -> str:
     lines: list[str] = []
     src = data.get("source_file") or ""
     if src:
-        lines.append(f"출처: {Path(str(src)).name}")
+        lines.append(f"Source: {Path(str(src)).name}")
     captured = data.get("captured_at") or ""
     if captured:
-        lines.append(f"시각: {captured}")
+        lines.append(f"Time: {captured}")
     author = data.get("author") or ""
     if author:
-        lines.append(f"사용자: {author}")
+        lines.append(f"User: {author}")
 
     rels: list[str] = []
     for _, nbr, edata in G.edges(node_id, data=True):
@@ -92,11 +92,11 @@ def _node_description(G: nx.Graph, node_id: str) -> str:
             tag += f" [{conf}]"
         rels.append(f"→ {tag} → {nbr_label}")
     if rels:
-        lines.append("관계:")
+        lines.append("Relations:")
         lines.extend(rels[:8])
         if len(rels) > 8:
-            lines.append(f"… 외 {len(rels) - 8}개")
-    return "\n".join(lines) if lines else "관련 설명이 없습니다."
+            lines.append(f"… and {len(rels) - 8} more")
+    return "\n".join(lines) if lines else "No description available."
 
 
 def to_pattern2_html(
@@ -449,13 +449,13 @@ def _render_template(payload: dict[str, Any], *, query_url: str = "/api/graph/qu
         <path d="m20 20-3.5-3.5"/>
       </svg>
       <input id="search" type="search" placeholder="Search entities..." autocomplete="off" data-doc-search="1">
-      <button type="button" class="ask-close" aria-label="닫기" onclick="closeAskPanel()">×</button>
+      <button type="button" class="ask-close" aria-label="Close" onclick="closeAskPanel()">×</button>
     </div>
 <<<ASK_PANEL_HTML>>>
   </div>
 
   <div id="node-detail">
-    <button type="button" id="detail-close" aria-label="닫기" onclick="hideDetail()">×</button>
+    <button type="button" id="detail-close" aria-label="Close" onclick="hideDetail()">×</button>
     <div class="node-type" id="detail-type"></div>
     <h3 id="detail-title"></h3>
     <p id="detail-desc"></p>
@@ -852,7 +852,7 @@ network.on('click', function(params) {{
   typeEl.style.color = node.color;
   typeEl.style.border = `1px solid ${{node.color}}66`;
   titleEl.textContent = node.label.replace(/\\n/g, ' ');
-  descEl.textContent = nodeDescriptions[nodeId] || '관련 설명이 없습니다.';
+  descEl.textContent = nodeDescriptions[nodeId] || 'No description available.';
   detail.style.display = 'block';
 }});
 

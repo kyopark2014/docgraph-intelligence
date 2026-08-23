@@ -23,13 +23,6 @@ import tempfile
 from pathlib import Path
 
 _GRAPH_DIR = Path(__file__).resolve().parent
-_REPO_ROOT = _GRAPH_DIR.parent
-_APPLICATION_DIR = _REPO_ROOT / "application"
-
-if str(_REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(_REPO_ROOT))
-if str(_APPLICATION_DIR) not in sys.path:
-    sys.path.insert(0, str(_APPLICATION_DIR))
 if str(_GRAPH_DIR) not in sys.path:
     sys.path.insert(0, str(_GRAPH_DIR))
 
@@ -106,14 +99,14 @@ def list_image_files(folder: Path) -> list[Path]:
 
 
 def _extract_image_markdown(image_path: Path) -> str:
-    """One page image → Markdown via Bedrock multimodal (img2text / MCP path)."""
-    import mcp_server_text_extraction as tex
+    """One page image → Markdown via Bedrock Mantle multimodal."""
+    from lib import img2text
 
     with open(image_path, "rb") as f:
         raw = f.read()
-    b64 = tex._prepare_image_base64(raw)
-    raw_text = tex._extract_text_with_llm(b64, LLM_PROMPT)
-    return tex._parse_result(raw_text).strip()
+    b64 = img2text.prepare_image_base64(raw)
+    raw_text = img2text.extract_text_with_llm(b64, LLM_PROMPT)
+    return img2text.parse_result(raw_text).strip()
 
 
 def pdf_to_text_classical(path: Path) -> str:

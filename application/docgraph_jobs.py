@@ -384,7 +384,7 @@ def republish_docgraph_graph_html(
         html_name="app-graph.html",
         title="DocGraph",
         subtitle=(
-            "DocGraph 지식 그래프 · 노드 클릭 시 출처·관계 상세를 볼 수 있습니다."
+            "DocGraph knowledge graph · click a node for source and relation details."
         ),
         query_url="/api/docgraph/query",
     )

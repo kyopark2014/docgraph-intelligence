@@ -2,8 +2,8 @@
 Image → Markdown text extraction via AWS Bedrock multimodal.
 
 Used as:
-  - Library helpers for DocGraph Sync Foundation Model Parser (``graph/pdf2text.py``)
   - Optional FastMCP server when ``mcp`` is installed (agent tools)
+  - DocGraph Sync Foundation Model Parser now lives in ``graph/lib/img2text.py``
 
 Based on chat.py summarize_image / extract_text logic.
 """

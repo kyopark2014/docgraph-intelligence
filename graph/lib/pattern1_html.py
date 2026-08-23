@@ -66,7 +66,7 @@ def _infer_community_labels(
             lab = re.sub(r"\s+", " ", lab).strip()
             if lab and lab not in top:
                 top.append(lab[:28])
-        labels[cid] = " · ".join(top) if top else f"그룹 {cid}"
+        labels[cid] = " · ".join(top) if top else f"Group {cid}"
     return labels
 
 
@@ -75,13 +75,13 @@ def _node_description(G: nx.Graph, node_id: str) -> str:
     lines: list[str] = []
     src = data.get("source_file") or ""
     if src:
-        lines.append(f"출처: {Path(str(src)).name}")
+        lines.append(f"Source: {Path(str(src)).name}")
     captured = data.get("captured_at") or ""
     if captured:
-        lines.append(f"시각: {captured}")
+        lines.append(f"Time: {captured}")
     author = data.get("author") or ""
     if author:
-        lines.append(f"사용자: {author}")
+        lines.append(f"User: {author}")
 
     rels: list[str] = []
     for _, nbr, edata in G.edges(node_id, data=True):
@@ -93,11 +93,11 @@ def _node_description(G: nx.Graph, node_id: str) -> str:
             tag += f" [{conf}]"
         rels.append(f"→ {tag} → {nbr_label}")
     if rels:
-        lines.append("관계:")
+        lines.append("Relations:")
         lines.extend(rels[:8])
         if len(rels) > 8:
-            lines.append(f"… 외 {len(rels) - 8}개")
-    return "\n".join(lines) if lines else "관련 설명이 없습니다."
+            lines.append(f"… and {len(rels) - 8} more")
+    return "\n".join(lines) if lines else "No description available."
 
 
 def to_pattern1_html(
@@ -168,14 +168,14 @@ def to_pattern1_html(
         legend_items.append(
             {
                 "id": str(cid),
-                "label": community_labels.get(cid, f"그룹 {cid}"),
+                "label": community_labels.get(cid, f"Group {cid}"),
                 "color": GROUP_COLORS[cid % len(GROUP_COLORS)],
                 "count": len(communities[cid]),
             }
         )
 
     subtitle = subtitle or (
-        "graphify로 추출된 지식 그래프 · 노드를 클릭하면 상세 정보와 관계를 확인할 수 있습니다"
+        "Knowledge graph extracted with graphify · click a node for details and relations"
     )
 
     payload = {
@@ -460,13 +460,13 @@ def _render_template(payload: dict[str, Any], *, query_url: str = "/api/graph/qu
         <path d="m20 20-3.5-3.5"/>
       </svg>
       <input id="search" type="search" placeholder="Search entities..." autocomplete="off" data-doc-search="1">
-      <button type="button" class="ask-close" aria-label="닫기" onclick="closeAskPanel()">×</button>
+      <button type="button" class="ask-close" aria-label="Close" onclick="closeAskPanel()">×</button>
     </div>
 <<<ASK_PANEL_HTML>>>
   </div>
 
   <div id="node-detail">
-    <button type="button" id="detail-close" aria-label="닫기" onclick="hideDetail()">×</button>
+    <button type="button" id="detail-close" aria-label="Close" onclick="hideDetail()">×</button>
     <div class="node-type" id="detail-type"></div>
     <h3 id="detail-title"></h3>
     <p id="detail-desc"></p>
@@ -839,12 +839,12 @@ network.on('click', function(params) {{
   const titleEl = document.getElementById('detail-title');
   const descEl = document.getElementById('detail-desc');
 
-  typeEl.textContent = leg ? leg.label : (`그룹 ${{node.group}}`);
+  typeEl.textContent = leg ? leg.label : (`Group ${{node.group}}`);
   typeEl.style.background = node.color + '33';
   typeEl.style.color = node.color;
   typeEl.style.border = `1px solid ${{node.color}}66`;
   titleEl.textContent = node.label.replace(/\\n/g, ' ');
-  descEl.textContent = nodeDescriptions[nodeId] || '관련 설명이 없습니다.';
+  descEl.textContent = nodeDescriptions[nodeId] || 'No description available.';
   detail.style.display = 'block';
 }});
 

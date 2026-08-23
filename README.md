@@ -590,7 +590,7 @@ Default (Foundation Model Parser **Off**): `_pdf_to_text` → classical path in 
 When **Foundation Model Parser** is **On** in DocGraph Configure (default Off), uses the same multimodal path as rag-multimodal:
 
 1. **PyMuPDF** renders page PNGs (`page_001.png` …) → `{docgraph}/graphify-out/converted/.pdf_pages/{stem}_{hash}/pages/`
-2. Each image converted to Markdown via multimodal LLM (OpenAI/gateway) (`mcp_server_text_extraction` · img2text prompt)
+2. Each image converted to Markdown via multimodal LLM (OpenAI/gateway) (`graph/lib/img2text.py` · img2text prompt)
 3. **Per page** append `## Page N` to `.pdf_pages/.../extracted.md` (+fsync). If Sync interrupts, next Sync resumes (finished pages·PNGs skipped)
 4. When complete, stage to `converted/{stem}.md` (or `_partNN.md`). On failure (only when no partial md), fallback to classical (pdfplumber/pypdf)
 

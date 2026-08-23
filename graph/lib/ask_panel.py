@@ -240,21 +240,21 @@ function renderAskResult(data) {
     if (!src.readable || !(src.excerpts || []).length) {
       return `<div class="ask-source"><div class="src-name">${escapeHtml(src.name || src.path)}</div>` +
         `<div class="src-labels">${escapeHtml(labels || '')}</div>` +
-        `<div class="ask-error">${escapeHtml(src.error || '본문을 읽지 못했습니다.')}</div></div>`;
+        `<div class="ask-error">${escapeHtml(src.error || 'Could not read the body.')}</div></div>`;
     }
     const excerpts = src.excerpts.map(ex => `<div class="ask-excerpt">${escapeHtml(ex)}</div>`).join('');
     return `<div class="ask-source"><div class="src-name">${escapeHtml(src.name)}</div>` +
-      `<div class="src-labels">관련: ${escapeHtml(labels)}</div>${excerpts}</div>`;
+      `<div class="src-labels">Related: ${escapeHtml(labels)}</div>${excerpts}</div>`;
   }).join('');
 
   body.innerHTML =
     `<div class="ask-status">Traversal: ${escapeHtml((data.mode || 'bfs').toUpperCase())} · ` +
-    `시작 ${ (data.start_nodes || []).length } · 노드 ${ (data.nodes || []).length }` +
+    `starts ${ (data.start_nodes || []).length } · nodes ${ (data.nodes || []).length }` +
     `${data.truncated ? ' · truncated' : ''}</div>` +
-    `<div class="ask-section"><h4>시작 노드</h4>${start || '<span class="ask-status">없음</span>'}</div>` +
-    `<div class="ask-section"><h4>관련 노드</h4>${nodes || '<span class="ask-status">없음</span>'}</div>` +
-    (edges ? `<div class="ask-section"><h4>관계</h4>${edges}</div>` : '') +
-    `<div class="ask-section"><h4>소스 본문</h4>${sources || '<span class="ask-status">연결된 소스 파일이 없습니다.</span>'}</div>`;
+    `<div class="ask-section"><h4>Start nodes</h4>${start || '<span class="ask-status">None</span>'}</div>` +
+    `<div class="ask-section"><h4>Related nodes</h4>${nodes || '<span class="ask-status">None</span>'}</div>` +
+    (edges ? `<div class="ask-section"><h4>Relations</h4>${edges}</div>` : '') +
+    `<div class="ask-section"><h4>Source excerpts</h4>${sources || '<span class="ask-status">No linked source files.</span>'}</div>`;
 
   body.querySelectorAll('.ask-chip[data-nid]').forEach(el => {
     el.addEventListener('click', () => focusAskNode(el.getAttribute('data-nid')));
@@ -271,7 +271,7 @@ async function submitAsk() {
     return;
   }
   openAskPanel();
-  body.innerHTML = '<div class="ask-status">문서를 검색하는 중…</div>';
+  body.innerHTML = '<div class="ask-status">Searching documents…</div>';
   try {
     const res = await fetch('<<<GRAPH_QUERY_URL>>>', {
       method: 'POST',

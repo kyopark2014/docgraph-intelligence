@@ -98,7 +98,7 @@ def write_user_graph(
         html_path,
         title="Knowledge Graph",
         subtitle=(
-            "지식 그래프 · 노드 클릭 시 출처·관계 상세를 볼 수 있습니다. "
+            "Knowledge graph · click a node for source and relation details. "
             f"({H.number_of_nodes()} nodes / {H.number_of_edges()} edges)"
         ),
     )
@@ -195,7 +195,7 @@ def republish_html_from_json(
         title=title,
         subtitle=subtitle
         or (
-            "지식 그래프 · 노드 클릭 시 출처·관계 상세를 볼 수 있습니다. "
+            "Knowledge graph · click a node for source and relation details. "
             f"({G.number_of_nodes()} nodes / {G.number_of_edges()} edges)"
         ),
         query_url=query_url,
