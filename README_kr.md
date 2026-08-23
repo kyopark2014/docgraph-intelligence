@@ -6,7 +6,7 @@ AI application에서 사내의 중요한 문서를 활용하고자 한다면, �
 
 아래는 DocGraph를 이용한 agent architecture입니다. VPC로 외부에서 접속이 안되도록 접근제어를 수행할 수 있고 Serverless인 ECS Fargate를 이용해 인프라 관리에 대한 부담없이 Agent를 구현하여 활용할 수 있습니다.
 
-<img width="900" alt="image" src="https://github.com/user-attachments/assets/73fea696-cc15-4166-8702-91556f42de1c" />
+<img width="900" alt="image" src="https://github.com/user-attachments/assets/677b1f9b-e2a7-47f2-8861-969ca81ad838" />
 
 아래는 전체적인 시스템 구성에 대해 소개하고 있습니다. Browser에서 Web UI를 이용해 접속하고 LangGraph로 구현된 Agent에서 MCP/SKILL을 이용해 knowledge graph를 검색하고 활용할 수 있습니다. 
 
