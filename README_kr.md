@@ -865,17 +865,18 @@ uvicorn application.server:app --host 0.0.0.0 --port 8501
 
 ## 실행 결과
 
-아래와 같이 DocGraph MCP(`docgraph`)를 enable 합니다.
+아래와 같이 DocGraph MCP(`docgraph`)를 enable 합니다. 또한, graph memory MCP는 long-term memory로서 필요에 따라 enable합니다.
 
-<img width="251" height="286" alt="image" src="https://github.com/user-attachments/assets/65f50586-7531-460a-8b63-5a33adfdd9ba" />
+<img width="202" height="247" alt="image" src="https://github.com/user-attachments/assets/2016dfe2-270b-40d0-8219-e29c10cddf18" />
 
-이후 "docgraph로 T-Box에 대해 조사하세요."라고 입력 후 결과를 확인합니다. 
+이제 아래와 같이 "What is the reasmoning of agent?"라고 입력하면 DocGraph로 추출된 graph 기반으로 아래와 같은 답변을 얻을 수 있습니다.
 
-<img width="921" height="760" alt="image" src="https://github.com/user-attachments/assets/9ac17473-f301-4e86-9599-a6ede97043ca" />
+<img width="918" height="601" alt="image" src="https://github.com/user-attachments/assets/0b026b5a-d3ed-4d75-aa17-9e8509635117" />
 
-"docgraph로 reasoning에 대해 조사하세요."라고 질문 후 결과를 보면 아래와 같습니다.
+실제 여기서 사용된 graph 정보는 아래와 같습니다.
 
-<img width="925" height="768" alt="image" src="https://github.com/user-attachments/assets/a2915115-69c3-4335-a4d7-b12651c8ad42" />
+<img width="866" height="538" alt="image" src="https://github.com/user-attachments/assets/e9ff6b41-2368-482e-92cd-422efa9ca86a" />
+
 
 ---
 
