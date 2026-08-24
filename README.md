@@ -7,7 +7,7 @@ To leverage important internal documents in an AI application, you need excellen
 Below is the agent architecture using DocGraph. You can enforce access control so external traffic cannot reach the app through the VPC, and use serverless **ECS Fargate** to run the Agent without heavy infrastructure operations.
 
 
-<img width="900" alt="image" src="https://github.com/user-attachments/assets/677b1f9b-e2a7-47f2-8861-969ca81ad838" />
+<img width="950" alt="image" src="https://github.com/user-attachments/assets/a2484cc2-d644-4b96-acfe-116debd69b82" />
 
 The following describes the overall system layout. Users connect through the browser Web UI, and the LangGraph Agent searches and uses the knowledge graph via MCP and Skills.
 
