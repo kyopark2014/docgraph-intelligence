@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 DEFAULT_MODEL_ID = "openai.gpt-5.6-sol"
 DEFAULT_MANTLE_REGION = "us-east-1"
 DEFAULT_PROMPT = (
-    "텍스트를 추출해서 markdown 포맷으로 변환하세요. <result> tag를 붙여주세요."
+    "텍스트를 추출해서 markdown 포맷으로 변환하세요. 원문의 언어를 그대로 유지하고 번역하지 마세요. <result> tag를 붙여주세요."
 )
 
 
