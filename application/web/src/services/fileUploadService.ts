@@ -1,9 +1,15 @@
 import { api } from "../api";
 
-/** Normalize any thrown value into an Error with a safe, user-facing message. */
+/** Normalize any thrown value into an Error with a useful user-facing message. */
 function toUploadError(context: string, cause: unknown): Error {
-  // Never forward raw exception text (stack fragments, SDK internals) to the UI.
-  const error = new Error(context);
+  let detail = "";
+  if (cause instanceof Error && cause.message.trim()) {
+    detail = cause.message.trim();
+  } else if (typeof cause === "string" && cause.trim()) {
+    detail = cause.trim();
+  }
+  const message = detail && detail !== context ? `${context}: ${detail}` : context;
+  const error = new Error(message);
   if (cause instanceof Error) {
     (error as Error & { cause?: unknown }).cause = cause;
   }

@@ -113,6 +113,16 @@ export interface WikiRawUploadResult {
   saved: Array<{ name: string; path: string; bytes: number }>;
 }
 
+export interface WikiRawPresignResult {
+  ok: boolean;
+  file_name: string;
+  s3_key: string;
+  content_type?: string;
+  upload_url: string;
+  headers: Record<string, string>;
+  expires_in?: number;
+}
+
 export interface WikiBrowseResult {
   path: string;
   parent: string | null;
@@ -188,34 +198,105 @@ export const api = {
     }),
   uploadWikiRawFiles: async (files: File[]): Promise<WikiRawUploadResult> => {
     if (!files.length) {
-      throw new Error("No files to upload.");
+      throw new Error("업로드할 파일이 없습니다.");
     }
-    uiLog("wiki:raw upload start", { count: files.length });
-    const form = new FormData();
+    // Presigned PUT: browser → S3 directly (avoids ECS/ALB ~80MB body limits).
+    uiLog("docgraph:raw upload start", { count: files.length });
+
+    const saved: WikiRawUploadResult["saved"] = [];
+    let docgraphDir = "";
+    let rawDir = "";
+
     for (const file of files) {
-      form.append("files", file, file.name);
-    }
-    const res = await fetch("/api/docgraph/raw", {
-      method: "POST",
-      credentials: "include",
-      body: form,
-    });
-    if (!res.ok) {
-      const text = await res.text();
-      uiError("wiki:raw upload failed", { status: res.status, body: text });
-      let message = text || res.statusText;
-      try {
-        const parsed = JSON.parse(text) as { detail?: string };
-        if (typeof parsed.detail === "string" && parsed.detail) {
-          message = parsed.detail;
-        }
-      } catch {
-        // keep raw text
+      const presign = await request<WikiRawPresignResult>(
+        "/api/docgraph/raw/presign",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            file_name: file.name,
+            size: file.size,
+            content_type: file.type || undefined,
+          }),
+        },
+      );
+      if (!presign.upload_url || !presign.s3_key) {
+        throw new Error("Presign succeeded but no upload URL was returned");
       }
-      throw new Error(message);
+
+      uiLog("docgraph:raw put start", {
+        name: presign.file_name,
+        s3_key: presign.s3_key,
+        size: file.size,
+        host: (() => {
+          try {
+            return new URL(presign.upload_url).host;
+          } catch {
+            return "";
+          }
+        })(),
+      });
+
+      const putHeaders = new Headers(presign.headers || {});
+      if (!putHeaders.has("Content-Type")) {
+        putHeaders.set(
+          "Content-Type",
+          presign.content_type || "application/octet-stream",
+        );
+      }
+      let putRes: Response;
+      try {
+        putRes = await fetch(presign.upload_url, {
+          method: "PUT",
+          body: file,
+          headers: putHeaders,
+        });
+      } catch (err) {
+        const detail = err instanceof Error ? err.message : String(err);
+        uiError("docgraph:raw put network error", { detail });
+        throw new Error(`S3 직접 업로드 네트워크 오류: ${detail}`);
+      }
+      if (!putRes.ok) {
+        const text = await putRes.text();
+        uiError("docgraph:raw put failed", { status: putRes.status, body: text });
+        const codeMatch = text.match(/<Code>([^<]+)<\/Code>/i);
+        const msgMatch = text.match(/<Message>([^<]+)<\/Message>/i);
+        const s3Detail =
+          codeMatch || msgMatch
+            ? [codeMatch?.[1], msgMatch?.[1]].filter(Boolean).join(": ")
+            : "";
+        throw new Error(
+          s3Detail ||
+            text.slice(0, 200) ||
+            putRes.statusText ||
+            `Direct S3 upload failed (HTTP ${putRes.status})`,
+        );
+      }
+
+      const part = await request<WikiRawUploadResult>(
+        "/api/docgraph/raw/complete",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            file_name: presign.file_name,
+            s3_key: presign.s3_key,
+            size: file.size,
+          }),
+        },
+      );
+      docgraphDir = part.docgraph_dir || docgraphDir;
+      rawDir = part.raw_dir || rawDir;
+      if (part.saved?.length) {
+        saved.push(...part.saved);
+      }
     }
-    const data = (await res.json()) as WikiRawUploadResult;
-    uiLog("wiki:raw upload complete", data);
+
+    const data: WikiRawUploadResult = {
+      docgraph_dir: docgraphDir,
+      raw_dir: rawDir,
+      saved,
+      count: saved.length,
+    };
+    uiLog("docgraph:raw upload complete", data);
     return data;
   },
   browseWikiSources: (path?: string) => {

@@ -146,7 +146,12 @@ export function useFileUpload({ disabled = false }: UseFileUploadOptions = {}) {
         onComplete?.(result.message);
       } catch (err) {
         console.error("DocGraph document upload failed", err);
-        setUploadError("DocGraph upload failed. Please try again.");
+        const detail = err instanceof Error ? err.message : "";
+        setUploadError(
+          detail
+            ? detail.replace(/^DocGraph upload failed:\s*/i, "")
+            : "DocGraph upload failed. Please try again.",
+        );
       } finally {
         setUploading(false);
       }

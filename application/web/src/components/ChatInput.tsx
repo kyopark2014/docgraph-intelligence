@@ -315,7 +315,7 @@ export function ChatInput({
               <span className="chat-add-menu-text">
                 <span className="chat-add-menu-label">Upload to DocGraph</span>
                 <span className="chat-add-menu-desc">
-                  Upload to docgraph/raw and Sync DocGraph
+                  S3로 직접 업로드 후 DocGraph Sync
                 </span>
               </span>
             </button>
