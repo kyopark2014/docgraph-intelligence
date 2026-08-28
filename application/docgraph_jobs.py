@@ -1,4 +1,4 @@
-"""Background DocGraph sync jobs (per-user under .session_storage/{user}/docgraph).
+"""Background DocGraph sync jobs (per-user under .session_storage/{user}/wiki).
 
 Sync runs in a detached subprocess so closing the DocGraph modal (or the
 browser tab) does not cancel the job. Status is also persisted to disk.
@@ -43,12 +43,6 @@ def _status_path(user_id: str) -> Path:
     return Path(utils.wiki_graphify_out_dir(user_id)) / _STATUS_NAME
 
 
-def _legacy_status_path(user_id: str) -> Path:
-    from application import utils
-
-    return Path(utils.wiki_graphify_out_dir(user_id)) / ".wiki_sync_status.json"
-
-
 def _persist_state(user_id: str, state: "DocGraphJobState") -> None:
     try:
         path = _status_path(user_id)
@@ -62,6 +56,13 @@ def _persist_state(user_id: str, state: "DocGraphJobState") -> None:
     except OSError:
         logger.exception("Failed to persist DocGraph sync status user=%s", user_id)
 
+
+
+
+def _legacy_status_path(user_id: str) -> Path:
+    from application import utils
+
+    return Path(utils.wiki_graphify_out_dir(user_id)) / ".wiki_sync_status.json"
 
 def _load_persisted_state(user_id: str) -> dict[str, Any] | None:
     path = _status_path(user_id)
@@ -88,6 +89,14 @@ class DocGraphJobState:
     updated_at: datetime = field(default_factory=_now)
     message: str | None = None
     pid: int | None = None
+    progress_file: str | None = None
+    progress_file_i: int | None = None
+    progress_file_n: int | None = None
+    progress_page: int | None = None
+    progress_page_n: int | None = None
+    progress_pct: int | None = None
+    progress_aggregated: bool = False
+    vision_model: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -96,11 +105,21 @@ class DocGraphJobState:
             "error": self.error,
             "message": self.message,
             "pid": self.pid,
+            "vision_model": self.vision_model,
             "last_success_at": (
                 self.last_success_at.isoformat() if self.last_success_at else None
             ),
             "started_at": self.started_at.isoformat() if self.started_at else None,
             "finished_at": self.finished_at.isoformat() if self.finished_at else None,
+            "progress": {
+                "file": self.progress_file,
+                "file_i": self.progress_file_i,
+                "file_n": self.progress_file_n,
+                "page": self.progress_page,
+                "page_n": self.progress_page_n,
+                "pct": self.progress_pct,
+                "aggregated": self.progress_aggregated,
+            },
         }
 
 
@@ -123,9 +142,19 @@ def _get_or_create(user_id: str) -> DocGraphJobState:
             state.error = persisted.get("error")  # type: ignore[assignment]
             state.message = persisted.get("message")  # type: ignore[assignment]
             state.pid = persisted.get("pid")  # type: ignore[assignment]
+            state.vision_model = persisted.get("vision_model")  # type: ignore[assignment]
             state.last_success_at = _parse_iso(persisted.get("last_success_at"))
             state.started_at = _parse_iso(persisted.get("started_at"))
             state.finished_at = _parse_iso(persisted.get("finished_at"))
+            prog = persisted.get("progress")
+            if isinstance(prog, dict):
+                state.progress_file = prog.get("file")  # type: ignore[assignment]
+                state.progress_file_i = prog.get("file_i")  # type: ignore[assignment]
+                state.progress_file_n = prog.get("file_n")  # type: ignore[assignment]
+                state.progress_page = prog.get("page")  # type: ignore[assignment]
+                state.progress_page_n = prog.get("page_n")  # type: ignore[assignment]
+                state.progress_pct = prog.get("pct")  # type: ignore[assignment]
+                state.progress_aggregated = bool(prog.get("aggregated"))
             if state.status in ("queued", "running") and state.pid:
                 if not _pid_alive(int(state.pid)):
                     state.status = "error"
@@ -172,8 +201,14 @@ def get_docgraph_job_status(user_id: str) -> dict[str, Any]:
         return state.to_dict()
 
 
-def ensure_docgraph_sync(user_id: str, *, full: bool = False) -> dict[str, Any]:
+def ensure_docgraph_sync(
+    user_id: str,
+    *,
+    full: bool = False,
+    model: str | None = None,
+) -> dict[str, Any]:
     """Enqueue a background wiki sync for ``user_id`` unless already running."""
+    model_name = (model or "").strip() or None
     with _lock:
         state = _get_or_create(user_id)
         if user_id in _running_users or state.status in ("queued", "running"):
@@ -191,6 +226,11 @@ def ensure_docgraph_sync(user_id: str, *, full: bool = False) -> dict[str, Any]:
         state.status = "queued"
         state.error = None
         state.message = "DocGraph 동기화를 백그라운드에서 시작합니다."
+        if model_name:
+            state.message = (
+                f"DocGraph 동기화를 백그라운드에서 시작합니다. (model: {model_name})"
+            )
+        state.vision_model = model_name
         state.started_at = _now()
         state.finished_at = None
         state.updated_at = state.started_at
@@ -200,7 +240,7 @@ def ensure_docgraph_sync(user_id: str, *, full: bool = False) -> dict[str, Any]:
 
     thread = threading.Thread(
         target=_run_sync,
-        args=(user_id, full),
+        args=(user_id, full, model_name),
         name=f"docgraph-sync-{user_id}",
         daemon=True,
     )
@@ -220,12 +260,81 @@ def _is_sync_progress_line(text: str) -> bool:
     )
     if any(text.startswith(p) or p in text for p in noisy_prefixes):
         return False
-    # botocore / AWS credential discovery chatter
-    if "Found credentials" in text or "credentials.py:" in text:
+    noisy_substrings = (
+        "bedrock.py:",
+        "Using Bedrock Invoke API",
+        "Using Bedrock Converse API",
+        "langchain_",
+        "botocore.",
+        "urllib3.",
+        "HTTP Request:",
+        "Found credentials",
+        "pdf2text.py:",
+        "Image size:",
+        "Resized to",
+        "base64_size",
+        "LLM attempt:",
+        "LLM text_len=",
+        "Attempt ",
+    )
+    if any(s in text for s in noisy_substrings):
         return False
     if text.startswith("{") or text.startswith("}") or text.startswith('"'):
         return False
     return True
+
+
+def _is_ui_progress_line(text: str) -> bool:
+    return text.startswith("[wiki progress]") or text.startswith("[wiki sync]")
+
+
+def _apply_progress_line(state: "DocGraphJobState", text: str) -> None:
+    """Update message + structured progress from a ``[wiki progress]`` line."""
+    import re
+
+    human = text
+    meta = text
+    if text.startswith("[wiki progress]"):
+        rest = text[len("[wiki progress]") :].strip()
+        if " | " in rest:
+            meta, human = rest.split(" | ", 1)
+            human = human.strip() or rest
+            meta = meta.strip()
+        else:
+            human = rest
+            meta = rest
+    state.message = human[:240]
+
+    fields: dict[str, str] = {}
+    name_m = re.search(r'name="([^"]*)"|name=(\S+)', meta)
+    if name_m:
+        fields["name"] = (
+            name_m.group(1) if name_m.group(1) is not None else name_m.group(2)
+        )
+    for key in ("fi", "fn", "p", "pn", "pct"):
+        km = re.search(rf"\b{key}=(\d+)\b", meta)
+        if km:
+            fields[key] = km.group(1)
+    if re.search(r"\bagg=1\b", meta):
+        fields["agg"] = "1"
+
+    if "name" in fields:
+        state.progress_file = fields["name"]
+    if "fi" in fields:
+        state.progress_file_i = int(fields["fi"])
+    if "fn" in fields:
+        state.progress_file_n = int(fields["fn"])
+    if "p" in fields:
+        state.progress_page = int(fields["p"])
+    if "pn" in fields:
+        state.progress_page_n = int(fields["pn"])
+    if "pct" in fields:
+        state.progress_pct = int(fields["pct"])
+    elif state.progress_page is not None and state.progress_page_n:
+        state.progress_pct = int(
+            round(100.0 * state.progress_page / state.progress_page_n)
+        )
+    state.progress_aggregated = fields.get("agg") == "1"
 
 
 def _sync_error_tail(stdout: str, returncode: int) -> str:
@@ -242,18 +351,23 @@ def _sync_error_tail(stdout: str, returncode: int) -> str:
     return stdout[-500:]
 
 
-def _run_sync(user_id: str, full: bool) -> None:
+def _run_sync(user_id: str, full: bool, model: str | None = None) -> None:
+    model_name = (model or "").strip() or None
     with _lock:
         state = _get_or_create(user_id)
         state.status = "running"
         state.updated_at = _now()
         state.message = "DocGraph 동기화 실행 중…"
+        if model_name:
+            state.message = f"DocGraph 동기화 실행 중… (model: {model_name})"
+        state.vision_model = model_name
         _persist_state(user_id, state)
 
     logger.info(
-        "DocGraph sync starting user=%s full=%s script=%s",
+        "DocGraph sync starting user=%s full=%s model=%s script=%s",
         user_id,
         full,
+        model_name or "(default)",
         _SYNC_SCRIPT,
     )
     proc: subprocess.Popen[str] | None = None
@@ -266,10 +380,15 @@ def _run_sync(user_id: str, full: bool) -> None:
         cmd = [sys.executable, "-u", str(_SYNC_SCRIPT), "--user", user_id]
         if full:
             cmd.append("--full")
-        logger.info("+ %s (detached)", " ".join(cmd))
+        if model_name:
+            cmd.extend(["--model", model_name])
 
         env = os.environ.copy()
         env["PYTHONUNBUFFERED"] = "1"
+        if model_name:
+            env["WIKI_VISION_MODEL"] = model_name
+        logger.info("+ %s (detached)", " ".join(cmd))
+
         popen_kwargs: dict[str, Any] = {
             "cwd": str(_APPLICATION_DIR.parent),
             "stdout": subprocess.PIPE,
@@ -295,13 +414,23 @@ def _run_sync(user_id: str, full: bool) -> None:
             if len(chunks) > 200:
                 chunks = chunks[-100:]
             text = line.strip()
-            if text and _is_sync_progress_line(text):
-                logger.info("[docgraph sync][%s] %s", user_id, text[:300])
+            if not text:
+                continue
+            if _is_sync_progress_line(text):
+                logger.info("[wiki sync][%s] %s", user_id, text[:300])
+            if _is_ui_progress_line(text):
                 with _lock:
                     state = _get_or_create(user_id)
-                    state.message = text[:240]
+                    _apply_progress_line(state, text)
                     state.updated_at = _now()
                     _persist_state(user_id, state)
+            elif text.startswith("[foundation model]") or text.startswith("[wiki sync]"):
+                with _lock:
+                    state = _get_or_create(user_id)
+                    if not state.progress_file:
+                        state.message = text[:240]
+                        state.updated_at = _now()
+                        _persist_state(user_id, state)
         returncode = proc.wait()
         stdout = "".join(chunks).strip()
 
@@ -315,7 +444,7 @@ def _run_sync(user_id: str, full: bool) -> None:
             republish_docgraph_graph_html(user_id)
         except Exception:
             logger.exception(
-                "DocGraph pattern HTML republish after sync failed user=%s", user_id
+                "Wiki pattern HTML republish after sync failed user=%s", user_id
             )
         with _lock:
             state = _get_or_create(user_id)
@@ -364,7 +493,7 @@ def _run_sync(user_id: str, full: bool) -> None:
 def republish_docgraph_graph_html(
     user_id: str, *, pattern: str | None = None
 ) -> bool:
-    """Render pattern UI HTML (app-graph.html) from the user's DocGraph graph.json."""
+    """Render pattern UI HTML (app-graph.html) from the user's wiki graph.json."""
     from application import utils
 
     out_dir = Path(utils.wiki_graphify_out_dir(user_id))
@@ -384,7 +513,7 @@ def republish_docgraph_graph_html(
         html_name="app-graph.html",
         title="DocGraph",
         subtitle=(
-            "DocGraph knowledge graph · click a node for source and relation details."
+            "DocGraph knowledge graph · 노드 클릭 시 출처·관계 상세를 볼 수 있습니다."
         ),
         query_url="/api/docgraph/query",
     )

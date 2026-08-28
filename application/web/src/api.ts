@@ -87,6 +87,17 @@ export interface WikiStatus {
   message?: string | null;
   last_success_at?: string | null;
   pid?: number | null;
+  progress?: {
+    file?: string | null;
+    file_i?: number | null;
+    file_n?: number | null;
+    page?: number | null;
+    page_n?: number | null;
+    pct?: number | null;
+    aggregated?: boolean | null;
+  } | null;
+  foundation_model_parser_enabled?: boolean;
+  parallel_processing_enabled?: boolean;
 }
 
 export interface WikiSourcesConfig {
@@ -95,6 +106,7 @@ export interface WikiSourcesConfig {
   urls: string[];
   max_sources: number;
   foundation_model_parser_enabled?: boolean;
+  parallel_processing_enabled?: boolean;
 }
 
 export interface WikiUrlIngestResult {
@@ -173,10 +185,15 @@ export const api = {
       method: "POST",
     }),
   getWikiStatus: () => request<WikiStatus>("/api/docgraph/status"),
-  syncWiki: (full = false) =>
-    request<WikiStatus>(`/api/docgraph/sync${full ? "?full=1" : ""}`, {
+  syncWiki: (full = false, model?: string) => {
+    const params = new URLSearchParams();
+    if (full) params.set("full", "1");
+    if (model?.trim()) params.set("model", model.trim());
+    const qs = params.toString();
+    return request<WikiStatus>(`/api/docgraph/sync${qs ? `?${qs}` : ""}`, {
       method: "POST",
-    }),
+    });
+  },
   setWikiGraphPattern: (pattern: GraphPattern | string) =>
     request<WikiStatus>("/api/docgraph/pattern", {
       method: "PATCH",
@@ -186,6 +203,7 @@ export const api = {
   putWikiSources: (body: {
     folders: string[];
     foundation_model_parser_enabled?: boolean;
+    parallel_processing_enabled?: boolean;
   }) =>
     request<WikiSourcesConfig>("/api/docgraph/sources", {
       method: "PUT",

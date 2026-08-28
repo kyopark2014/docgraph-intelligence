@@ -673,6 +673,7 @@ export default function App() {
                 onStop={handleStop}
                 onSend={handleSend}
                 onWikiUploadComplete={handleWikiUploadComplete}
+                syncModel={activeTask?.model_name}
               />
             }
           />

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Sync per-user DocGraph knowledge graph (graphify SKILL.md pipeline).
+"""Sync per-user wiki knowledge graph (graphify SKILL.md pipeline).
 
-Working directory is ``.session_storage/{user}/docgraph`` (raw + graphify-out),
-NOT a shared global directory. Implements detect → AST → semantic →
+Working directory is ``.session_storage/{user}/wiki`` (raw + graphify-out),
+NOT a shared global AGENT_WIKI_DIR. Implements detect → AST → semantic →
 build → HTML/JSON, with LiteLLM/Bedrock semantic extraction via docgraph-intelligence
 graph/lib.
 
@@ -16,13 +16,8 @@ from __future__ import annotations
 
 import argparse
 import json
-import logging
 import os
 import shutil
-
-# Silence botocore credential discovery before any AWS client is created.
-for _log_name in ("botocore", "botocore.credentials", "boto3", "urllib3"):
-    logging.getLogger(_log_name).setLevel(logging.WARNING)
 
 
 def _copy_file(src, dst) -> None:
@@ -54,7 +49,7 @@ _CODE_EXTS = {
 }
 
 
-def _docgraph_root(user_id: str | None = None) -> Path:
+def _wiki_root(user_id: str | None = None) -> Path:
     from application import utils
 
     return Path(utils.ensure_user_wiki_dir(user_id))
@@ -76,22 +71,22 @@ def _ensure_graphify() -> None:
         )
 
 
-def _default_input(docgraph: Path) -> Path:
-    raw = docgraph / "raw"
-    return raw if raw.is_dir() else docgraph
+def _default_input(wiki: Path) -> Path:
+    raw = wiki / "raw"
+    return raw if raw.is_dir() else wiki
 
 
-def _resolve_one_input(docgraph: Path, input_path: str | Path) -> Path:
+def _resolve_one_input(wiki: Path, input_path: str | Path) -> Path:
     target = Path(input_path).expanduser()
     if not target.is_absolute():
-        target = (docgraph / target).resolve()
+        target = (wiki / target).resolve()
     else:
         target = target.resolve()
     return target
 
 
 def _resolve_inputs(
-    docgraph: Path,
+    wiki: Path,
     *,
     user_id: str | None = None,
     input_path: str | None = None,
@@ -102,10 +97,8 @@ def _resolve_inputs(
     Priority:
     1. Explicit CLI ``--input`` values
     2. Per-user ``wiki_sources.json`` ``AGENT_WIKI_SOURCES``
-    3. Always also ``{docgraph}/raw`` when it contains files
-    4. If nothing else: ``{docgraph}/raw`` if present, else DocGraph root
-
-    Storage path remains ``.session_storage/{user}/docgraph`` .
+    3. Always also ``{wiki}/raw`` when it contains files
+    4. If nothing else: ``{wiki}/raw`` if present, else wiki root
     """
     from application import utils
 
@@ -123,26 +116,26 @@ def _resolve_inputs(
         if key in seen:
             return
         if not path.is_dir():
-            print(f"[docgraph sync] skip missing folder: {path}")
+            print(f"[wiki sync] skip missing folder: {path}")
             return
         seen.add(key)
         resolved.append(path)
 
     if explicit:
         for raw in explicit:
-            _add(_resolve_one_input(docgraph, raw))
+            _add(_resolve_one_input(wiki, raw))
     else:
         for raw in utils.get_wiki_source_folders(user_id):
             _add(Path(raw))
         # Always include inbox uploads when present (Configure → 문서 추가).
-        raw_dir = docgraph / "raw"
+        raw_dir = wiki / "raw"
         if raw_dir.is_dir() and any(raw_dir.iterdir()):
             _add(raw_dir)
         if not resolved:
-            _add(_default_input(docgraph))
+            _add(_default_input(wiki))
 
     if not resolved:
-        raise SystemExit("No valid DocGraph source folders to sync.")
+        raise SystemExit("No valid Wiki source folders to sync.")
     return resolved
 
 
@@ -190,7 +183,7 @@ def _merge_detections(parts: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
-def _docgraph_manifest_path(out: Path) -> Path:
+def _wiki_manifest_path(out: Path) -> Path:
     return out / "manifest.json"
 
 
@@ -222,13 +215,13 @@ def _detect_incremental_targets(
 
     Upstream ``detect_incremental(root)`` treats every file outside *root* as
     deleted when the manifest is shared. We detect each target, merge corpora,
-    then diff against the DocGraph-level manifest once.
+    then diff against the wiki-level manifest once.
     """
     from graphify.detect import detect, load_manifest
 
     parts: list[dict[str, Any]] = []
     for target in targets:
-        print(f"[docgraph sync] incremental detect on {target}", flush=True)
+        print(f"[wiki sync] incremental detect on {target}", flush=True)
         part = detect(target)
         parts.append(part)
         print(
@@ -275,19 +268,19 @@ def _detect_incremental_targets(
     return merged
 
 
-def _save_docgraph_manifest(out: Path, files: dict[str, list] | None) -> None:
-    """Persist mtimes for all corpus files under the DocGraph graphify-out manifest."""
+def _save_wiki_manifest(out: Path, files: dict[str, list] | None) -> None:
+    """Persist mtimes for all corpus files under the wiki graphify-out manifest."""
     from graphify.detect import save_manifest
 
     payload = files or {}
     try:
-        save_manifest(payload, str(_docgraph_manifest_path(out)))
+        save_manifest(payload, str(_wiki_manifest_path(out)))
     except TypeError:
         # Older graphifyy: save_manifest(files) only → cwd-relative default path.
         os.chdir(out.parent)
         save_manifest(payload)
     except Exception as exc:
-        print(f"[docgraph sync] WARNING: could not save manifest: {exc}", flush=True)
+        print(f"[wiki sync] WARNING: could not save manifest: {exc}", flush=True)
 
 
 def _empty_extract() -> dict[str, Any]:
@@ -300,8 +293,8 @@ def _empty_extract() -> dict[str, Any]:
     }
 
 
-def _docgraph_converted_dir(out: Path) -> Path:
-    """Canonical converted markdown dir: ``{user}/docgraph/graphify-out/converted``."""
+def _wiki_converted_dir(out: Path) -> Path:
+    """Canonical converted markdown dir: ``{user}/wiki/graphify-out/converted``."""
     return out / "converted"
 
 
@@ -324,16 +317,16 @@ def _relocate_detect_converted(
     detection: dict[str, Any],
     *,
     targets: list[Path],
-    docgraph_converted: Path,
+    wiki_converted: Path,
 ) -> dict[str, Any]:
-    """Move office sidecars from ``{source}/graphify-out/converted`` → DocGraph converted.
+    """Move office sidecars from ``{source}/graphify-out/converted`` → wiki converted.
 
     Upstream graphify ``detect()`` writes Office→markdown under the *scan root*
-    (e.g. ``~/Documents/docs/graphify-out/converted``). DocGraph Sync keeps a single
-    output tree under ``.session_storage/{user}/docgraph/graphify-out/`` .
+    (e.g. ``~/Documents/docs/graphify-out/converted``). Wiki Sync keeps a single
+    output tree under ``.session_storage/{user}/wiki/graphify-out/``.
     """
-    docgraph_converted.mkdir(parents=True, exist_ok=True)
-    used: set[str] = {p.name for p in docgraph_converted.glob("*") if p.is_file()}
+    wiki_converted.mkdir(parents=True, exist_ok=True)
+    used: set[str] = {p.name for p in wiki_converted.glob("*") if p.is_file()}
     path_map: dict[str, str] = {}
 
     source_converted_roots: list[Path] = []
@@ -363,7 +356,7 @@ def _relocate_detect_converted(
         src = Path(raw)
         if not _under_source_converted(src) or not src.is_file():
             return raw
-        dest = _unique_dest(docgraph_converted, src.name, used)
+        dest = _unique_dest(wiki_converted, src.name, used)
         try:
             _copy_file(src, dest)
         except OSError as exc:
@@ -397,7 +390,7 @@ def _relocate_detect_converted(
 
     if moved:
         print(
-            f"[docgraph sync] relocated {moved} converted file(s) → {docgraph_converted}",
+            f"[wiki sync] relocated {moved} converted file(s) → {wiki_converted}",
             flush=True,
         )
         # Best-effort cleanup of source-adjacent graphify-out/converted leftovers
@@ -423,11 +416,11 @@ def _relocate_detect_converted(
     return detection
 
 
-def _clear_docgraph_converted(docgraph_converted: Path) -> None:
-    """Refresh DocGraph converted/ at the start of a semantic staging run."""
-    if docgraph_converted.exists():
-        shutil.rmtree(docgraph_converted, ignore_errors=True)
-    docgraph_converted.mkdir(parents=True, exist_ok=True)
+def _clear_wiki_converted(wiki_converted: Path) -> None:
+    """Refresh wiki converted/ at the start of a semantic staging run."""
+    if wiki_converted.exists():
+        shutil.rmtree(wiki_converted, ignore_errors=True)
+    wiki_converted.mkdir(parents=True, exist_ok=True)
 
 
 def _pdf_to_text(
@@ -435,6 +428,9 @@ def _pdf_to_text(
     *,
     use_foundation_model: bool = False,
     work_dir: Path | None = None,
+    parallel_pages: bool = True,
+    file_i: int | None = None,
+    file_n: int | None = None,
 ) -> str:
     """Extract text from a PDF for semantic staging (see ``pdf2text.py``)."""
     from pdf2text import pdf_to_text
@@ -443,6 +439,9 @@ def _pdf_to_text(
         path,
         use_foundation_model=use_foundation_model,
         work_dir=work_dir,
+        parallel_pages=parallel_pages,
+        file_i=file_i,
+        file_n=file_n,
     )
 
 
@@ -451,6 +450,9 @@ def _doc_to_markdown_body(
     *,
     use_foundation_model: bool = False,
     pdf_work_dir: Path | None = None,
+    parallel_pages: bool = True,
+    file_i: int | None = None,
+    file_n: int | None = None,
 ) -> str | None:
     """Return markdown/plain text body for semantic extraction, or None if unsupported."""
     suffix = src.suffix.lower()
@@ -463,6 +465,9 @@ def _doc_to_markdown_body(
             src,
             use_foundation_model=use_foundation_model,
             work_dir=pdf_work_dir,
+            parallel_pages=parallel_pages,
+            file_i=file_i,
+            file_n=file_n,
         ).strip()
         if not body:
             raise ValueError(f"PDF에서 텍스트를 추출하지 못했습니다: {src}")
@@ -499,6 +504,7 @@ def _stage_docs_as_markdown(
     stage: Path,
     *,
     use_foundation_model: bool = False,
+    parallel_pages: bool = True,
 ) -> dict[str, str]:
     """Copy/convert docs into ``stage`` as ``.md`` files.
 
@@ -524,14 +530,21 @@ def _stage_docs_as_markdown(
                 return candidate
             n += 1
 
-    for src in files:
+    for idx, src in enumerate(files, 1):
         suffix = src.suffix.lower()
         if suffix in {".png", ".jpg", ".jpeg", ".webp", ".gif"}:
-            print(f"  skip image (vision not in DocGraph sync): {src}")
+            print(f"  skip image (vision not in wiki sync): {src}")
             continue
 
+        print(
+            f'[wiki progress] name="{src.name}" fi={idx} fn={len(files)} '
+            f"pct={int(round(100.0 * (idx - 1) / max(len(files), 1)))} "
+            f"| {src.name} · 파일 {idx}/{len(files)} · 변환 시작",
+            flush=True,
+        )
+
         original = str(src.resolve())
-        # Already under DocGraph graphify-out/converted (e.g. relocated Office sidecars)
+        # Already under wiki graphify-out/converted (e.g. relocated Office sidecars)
         try:
             if src.resolve().parent == stage.resolve() and suffix == ".md":
                 path_map[str(src.resolve())] = original
@@ -554,6 +567,9 @@ def _stage_docs_as_markdown(
                 src,
                 use_foundation_model=use_foundation_model,
                 pdf_work_dir=pdf_work,
+                parallel_pages=parallel_pages,
+                file_i=idx,
+                file_n=len(files),
             )
         except Exception as exc:
             print(f"  WARNING: failed to convert {src}: {exc}")
@@ -567,6 +583,12 @@ def _stage_docs_as_markdown(
             dest = stage / name
             dest.write_text(body, encoding="utf-8")
             path_map[str(dest.resolve())] = original
+            print(
+                f'[wiki progress] name="{src.name}" fi={idx} fn={len(files)} pct='
+                f"{int(round(100.0 * idx / max(len(files), 1)))} "
+                f"| {src.name} · 파일 {idx}/{len(files)} · 완료",
+                flush=True,
+            )
             continue
 
         parts = _chunk_text(body, max_chars=10000)
@@ -575,7 +597,8 @@ def _stage_docs_as_markdown(
             continue
         print(
             f"  stage {src.name} → {len(parts)} markdown chunk(s) "
-            f"({sum(len(p) for p in parts)} chars)"
+            f"({sum(len(p) for p in parts)} chars)",
+            flush=True,
         )
         for i, part in enumerate(parts, 1):
             if len(parts) == 1:
@@ -590,6 +613,13 @@ def _stage_docs_as_markdown(
             dest.write_text(header + part, encoding="utf-8")
             path_map[str(dest.resolve())] = original
 
+        print(
+            f'[wiki progress] name="{src.name}" fi={idx} fn={len(files)} pct='
+            f"{int(round(100.0 * idx / max(len(files), 1)))} "
+            f"| {src.name} · 파일 {idx}/{len(files)} · 완료",
+            flush=True,
+        )
+
     return path_map
 
 
@@ -599,7 +629,7 @@ def _incomplete_foundation_pdfs(
     """PDFs with partial ``.pdf_pages/.../extracted.md`` that should be resumed."""
     import hashlib
 
-    from pdf2text import _EXTRACTED_NAME, _pages_done_in_md
+    from pdf2text import _EXTRACTED_NAME, _collect_done_pages
 
     root = stage / ".pdf_pages"
     if not root.is_dir():
@@ -644,7 +674,12 @@ def _incomplete_foundation_pdfs(
         pngs = (
             sorted(pages_dir.glob("page_*.png")) if pages_dir.is_dir() else []
         )
-        done = _pages_done_in_md(work / _EXTRACTED_NAME)
+        total = len(pngs) if pngs else 0
+        done = _collect_done_pages(
+            work / _EXTRACTED_NAME,
+            pages_dir if pages_dir.is_dir() else work / "pages",
+            total,
+        )
         if not pngs and not done:
             continue
         if not done or (pngs and len(done) < len(pngs)):
@@ -667,7 +702,7 @@ def _merge_doc_files_with_resumes(
 ) -> list[str]:
     if not use_foundation_model:
         return doc_files
-    stage = _docgraph_converted_dir(out)
+    stage = _wiki_converted_dir(out)
     cand_paths = [Path(p) for p in (candidates or [])] + [
         Path(p) for p in doc_files
     ]
@@ -772,6 +807,7 @@ def _run_semantic(
     out: Path,
     deep: bool,
     use_foundation_model: bool = False,
+    parallel_pages: bool = True,
 ) -> dict[str, Any]:
     from lib.semantic import extract_corpus  # type: ignore
 
@@ -784,17 +820,20 @@ def _run_semantic(
         print("No doc/paper/image files - skipping semantic extraction")
         return result
 
-    stage = _docgraph_converted_dir(out)
+    stage = _wiki_converted_dir(out)
     stage.mkdir(parents=True, exist_ok=True)
     try:
         mode = "foundation-model" if use_foundation_model else "pdfplumber/pypdf"
         print(
-            f"[docgraph sync] staging {len(files)} doc/paper file(s) as markdown → {stage} "
+            f"[wiki sync] staging {len(files)} doc/paper file(s) as markdown → {stage} "
             f"(pdf parser: {mode})",
             flush=True,
         )
         path_map = _stage_docs_as_markdown(
-            files, stage, use_foundation_model=use_foundation_model
+            files,
+            stage,
+            use_foundation_model=use_foundation_model,
+            parallel_pages=parallel_pages,
         )
         staged_mds = list(path_map.keys())
         if not staged_mds:
@@ -809,7 +848,7 @@ def _run_semantic(
             return result
 
         print(
-            f"[docgraph sync] semantic extract on {len(staged_mds)} markdown chunk(s) "
+            f"[wiki sync] semantic extract on {len(staged_mds)} markdown chunk(s) "
             f"in {stage}",
             flush=True,
         )
@@ -919,11 +958,11 @@ def _build_from_extract(
 
 
 def _try_save_manifest(target: Path, detection: dict[str, Any]) -> None:
-    """Deprecated helper — prefer ``_save_docgraph_manifest``."""
+    """Deprecated helper — prefer ``_save_wiki_manifest``."""
     _ = target
     files = detection.get("files") if isinstance(detection, dict) else None
     if isinstance(files, dict):
-        # Best-effort: write beside DocGraph after chdir in run_sync.
+        # Best-effort: write beside wiki after chdir in run_sync.
         from graphify.detect import save_manifest
 
         try:
@@ -939,24 +978,36 @@ def run_sync(
     input_path: str | None = None,
     input_paths: list[str] | None = None,
     deep: bool = False,
+    model: str | None = None,
 ) -> dict[str, Any]:
-    """Run graphify sync for a user's DocGraph folder. Returns a status summary."""
-    docgraph = _docgraph_root(user_id)
-    os.chdir(docgraph)
-    out = docgraph / "graphify-out"
+    """Run graphify sync for a user's wiki folder. Returns a status summary."""
+    model_name = (model or "").strip()
+    if model_name:
+        os.environ["WIKI_VISION_MODEL"] = model_name
+        print(f"[wiki sync] vision model (UI): {model_name}", flush=True)
+    else:
+        print(
+            "[wiki sync] WARNING: no vision model from UI — "
+            "Foundation Model Parser will use default (Claude 5.0 Sonnet)",
+            flush=True,
+        )
+
+    wiki = _wiki_root(user_id)
+    os.chdir(wiki)
+    out = wiki / "graphify-out"
     out.mkdir(parents=True, exist_ok=True)
     _ensure_graphify()
     _resolve_python(out)
 
-    print(f"[docgraph sync] user={user_id or 'default'} docgraph={docgraph}", flush=True)
+    print(f"[wiki sync] user={user_id or 'default'} wiki={wiki}", flush=True)
     targets = _resolve_inputs(
-        docgraph,
+        wiki,
         user_id=user_id,
         input_path=input_path,
         input_paths=input_paths,
     )
     input_label = ", ".join(str(t) for t in targets)
-    print(f"[docgraph sync] sources ({len(targets)}): {input_label}", flush=True)
+    print(f"[wiki sync] sources ({len(targets)}): {input_label}", flush=True)
 
     from graphify.build import build_from_json
     from graphify.cluster import cluster
@@ -964,15 +1015,15 @@ def run_sync(
     from networkx.readwrite import json_graph
 
     graph_json = out / "graph.json"
-    docgraph_converted = _docgraph_converted_dir(out)
-    manifest_path = _docgraph_manifest_path(out)
+    wiki_converted = _wiki_converted_dir(out)
+    manifest_path = _wiki_manifest_path(out)
     use_incremental = (
         not full and graph_json.is_file() and manifest_path.is_file()
     )
 
     if use_incremental:
         print(
-            f"[docgraph sync] incremental update on {len(targets)} source(s)",
+            f"[wiki sync] incremental update on {len(targets)} source(s)",
             flush=True,
         )
         detection = _detect_incremental_targets(
@@ -987,7 +1038,7 @@ def run_sync(
             print("No files changed since last run. Nothing to update.")
             return {
                 "status": "unchanged",
-                "docgraph": str(docgraph),
+                "wiki": str(wiki),
                 "input": input_label,
                 "inputs": [str(t) for t in targets],
                 "exists": graph_json.is_file(),
@@ -995,7 +1046,7 @@ def run_sync(
         print(f"{new_total} new/changed file(s) to re-extract.", flush=True)
         # Refresh converted only for files we will re-stage this run.
         detection = _relocate_detect_converted(
-            detection, targets=targets, docgraph_converted=docgraph_converted
+            detection, targets=targets, wiki_converted=wiki_converted
         )
         (out / ".graphify_incremental.json").write_text(
             json.dumps(detection, indent=2), encoding="utf-8"
@@ -1013,15 +1064,15 @@ def run_sync(
         )
     else:
         if full:
-            print("[docgraph sync] full re-detect/extract requested", flush=True)
+            print("[wiki sync] full re-detect/extract requested", flush=True)
         elif not graph_json.is_file() or not manifest_path.is_file():
             print(
-                "[docgraph sync] no prior graph/manifest — running full detect/extract",
+                "[wiki sync] no prior graph/manifest — running full detect/extract",
                 flush=True,
             )
         parts: list[dict[str, Any]] = []
         for target in targets:
-            print(f"[docgraph sync] full detect on {target}", flush=True)
+            print(f"[wiki sync] full detect on {target}", flush=True)
             part = detect(target)
             parts.append(part)
             print(
@@ -1030,10 +1081,10 @@ def run_sync(
                 flush=True,
             )
         detection = _merge_detections(parts)
-        # One canonical converted/ under the user's DocGraph (not beside Sources).
-        _clear_docgraph_converted(docgraph_converted)
+        # One canonical converted/ under the user's wiki (not beside Sources).
+        _clear_wiki_converted(wiki_converted)
         detection = _relocate_detect_converted(
-            detection, targets=targets, docgraph_converted=docgraph_converted
+            detection, targets=targets, wiki_converted=wiki_converted
         )
         (out / ".graphify_detect.json").write_text(
             json.dumps(detection, indent=2), encoding="utf-8"
@@ -1056,16 +1107,30 @@ def run_sync(
         Path(f).suffix.lower() in _CODE_EXTS for f in all_changed
     )
 
-    print("[docgraph sync] AST extract…", flush=True)
+    print("[wiki sync] AST extract…", flush=True)
     ast = _run_ast(code_files, out)
     from application import utils as app_utils
 
     use_foundation_model = app_utils.is_foundation_model_parser_enabled(user_id)
+    use_parallel = app_utils.is_wiki_parallel_processing_enabled(user_id)
     if use_foundation_model:
         print(
-            "[docgraph sync] Foundation Model Parser enabled — PDF→images→LLM",
+            "[wiki sync] Foundation Model Parser enabled — PDF→images→LLM",
             flush=True,
         )
+    if use_parallel and use_foundation_model:
+        print(
+            "[wiki sync] Parallel page processing enabled "
+            f"(page_workers={os.environ.get('WIKI_SYNC_PAGE_WORKERS', '4')}, "
+            f"llm_concurrency={os.environ.get('WIKI_SYNC_LLM_CONCURRENCY', '4')})",
+            flush=True,
+        )
+    elif use_foundation_model:
+        print(
+            "[wiki sync] Parallel page processing disabled — sequential pages",
+            flush=True,
+        )
+    if use_foundation_model:
         doc_files = _merge_doc_files_with_resumes(
             doc_files,
             out=out,
@@ -1078,12 +1143,13 @@ def run_sync(
         print("[graphify update] Code-only changes - skipping semantic extraction", flush=True)
         sem = _empty_extract()
     else:
-        print("[docgraph sync] semantic extract…", flush=True)
+        print("[wiki sync] semantic extract…", flush=True)
         sem = _run_semantic(
             doc_files,
             out=out,
             deep=deep,
             use_foundation_model=use_foundation_model,
+            parallel_pages=use_parallel and use_foundation_model,
         )
 
     merged = _merge_extracts(ast, sem)
@@ -1097,7 +1163,7 @@ def run_sync(
     )
 
     if use_incremental and old_backup.is_file():
-        print("[docgraph sync] incremental merge + cluster…", flush=True)
+        print("[wiki sync] incremental merge + cluster…", flush=True)
         existing_data = json.loads(old_backup.read_text(encoding="utf-8"))
         try:
             G_existing = json_graph.node_link_graph(existing_data, edges="links")
@@ -1135,14 +1201,14 @@ def run_sync(
         )
         old_backup.unlink(missing_ok=True)
     else:
-        print("[docgraph sync] build graph + cluster + export…", flush=True)
+        print("[wiki sync] build graph + cluster + export…", flush=True)
         _build_from_extract(merged, detection, out=out, input_label=input_label)
 
-    _save_docgraph_manifest(out, detection.get("files") if isinstance(detection, dict) else None)
+    _save_wiki_manifest(out, detection.get("files") if isinstance(detection, dict) else None)
 
     return {
         "status": "ready",
-        "docgraph": str(docgraph),
+        "wiki": str(wiki),
         "input": input_label,
         "inputs": [str(t) for t in targets],
         "exists": (out / "graph.html").is_file() or (out / "app-graph.html").is_file(),
@@ -1156,7 +1222,7 @@ def main() -> None:
     parser.add_argument(
         "--user",
         required=True,
-        help="User id (DocGraph root = .session_storage/{user}/docgraph)",
+        help="User id (wiki root = .session_storage/{user}/wiki)",
     )
     parser.add_argument(
         "--full",
@@ -1167,12 +1233,17 @@ def main() -> None:
         "--input",
         action="append",
         default=None,
-        help="Corpus path (repeatable). Default: user wiki_sources or docgraph/raw",
+        help="Corpus path (repeatable). Default: user wiki_sources or wiki/raw",
     )
     parser.add_argument("--deep", action="store_true", help="Aggressive INFERRED edges")
+    parser.add_argument(
+        "--model",
+        default=None,
+        help="UI display name for Foundation Model Parser vision model",
+    )
     args = parser.parse_args()
     print(
-        f"[docgraph sync] start user={args.user} full={args.full} deep={args.deep}",
+        f"[wiki sync] start user={args.user} full={args.full} deep={args.deep}",
         flush=True,
     )
     summary = run_sync(
@@ -1180,9 +1251,10 @@ def main() -> None:
         full=args.full,
         input_paths=args.input,
         deep=args.deep,
+        model=args.model,
     )
     print(
-        f"[docgraph sync] done status={summary.get('status')} "
+        f"[wiki sync] done status={summary.get('status')} "
         f"graph={summary.get('graph_json')}",
         flush=True,
     )

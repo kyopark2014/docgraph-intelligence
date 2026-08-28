@@ -33,6 +33,7 @@ interface Props {
   onStop?: () => void;
   onSend: (text: string, files?: string[]) => void;
   onWikiUploadComplete?: (message: string) => void;
+  syncModel?: string;
 }
 
 const WIKI_ACCEPT =
@@ -53,6 +54,7 @@ export function ChatInput({
   onStop,
   onSend,
   onWikiUploadComplete,
+  syncModel,
 }: Props) {
   const [value, setValue] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
@@ -86,7 +88,7 @@ export function ChatInput({
     onDragOver,
     onDragLeave,
     onDrop,
-  } = useFileUpload({ disabled });
+  } = useFileUpload({ disabled, syncModel });
 
   function adjustInputHeight() {
     const el = textareaRef.current;

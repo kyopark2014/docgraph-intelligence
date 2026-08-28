@@ -26,7 +26,10 @@ export const fileUploadService = {
     }
   },
 
-  async uploadToWiki(files: File[]): Promise<{ message: string }> {
+  async uploadToWiki(
+    files: File[],
+    model?: string,
+  ): Promise<{ message: string }> {
     try {
       const result = await api.uploadWikiRawFiles(files);
       const names = (result.saved || []).map((s) => s.name).join(", ");
@@ -35,7 +38,7 @@ export const fileUploadService = {
         (names ? ` (${names})` : "") +
         ".";
       try {
-        const sync = await api.syncWiki(false);
+        const sync = await api.syncWiki(false, model?.trim() || undefined);
         if (sync.status === "error") {
           message += ` DocGraph Sync failed: ${sync.error || "Unknown error"}`;
         } else if (sync.status === "unchanged") {
