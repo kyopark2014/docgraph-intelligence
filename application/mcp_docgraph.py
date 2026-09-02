@@ -119,13 +119,17 @@ def recall_docgraph(
         return _error("question is required")
 
     graph_json = Path(utils.wiki_graph_json_path(user_id))
-    if not graph_json.is_file():
-        return _error(
-            "DocGraph 그래프가 아직 없습니다. Settings → DocGraph → Sync를 실행한 뒤 다시 검색하세요."
-        )
+    blocked = utils.docgraph_recall_blocked_message(user_id, graph_json)
+    if blocked:
+        return _error(blocked)
 
     wiki_root = Path(utils.get_user_wiki_dir(user_id))
-    allowed = [wiki_root, wiki_root / "raw", wiki_root / "graphify-out"]
+    allowed = [
+        wiki_root,
+        wiki_root / "raw",
+        wiki_root / "graphify-out",
+        wiki_root / "graphify-out" / "converted",
+    ]
     for src in utils.get_wiki_source_folders(user_id):
         allowed.append(Path(src))
 

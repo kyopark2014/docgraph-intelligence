@@ -471,7 +471,12 @@ def query_wiki_graph(body: WikiQueryRequest, request: Request) -> dict:
             detail="DocGraph 그래프가 아직 없습니다. Settings → DocGraph → Sync를 실행하세요.",
         )
     wiki_root = Path(utils.get_user_wiki_dir(user_id))
-    allowed = [wiki_root, wiki_root / "raw", wiki_root / "graphify-out"]
+    allowed = [
+        wiki_root,
+        wiki_root / "raw",
+        wiki_root / "graphify-out",
+        wiki_root / "graphify-out" / "converted",
+    ]
     for src in utils.get_wiki_source_folders(user_id):
         allowed.append(Path(src))
     try:

@@ -248,6 +248,24 @@ def ensure_docgraph_sync(
     return get_docgraph_job_status(user_id)
 
 
+def _build_docgraph_embeddings_after_sync(user_id: str) -> None:
+    """Build node embeddings after DocGraph sync (local MCP reads same storage)."""
+    from application import utils
+    from application.graph_embeddings import maybe_build_node_embeddings
+
+    graph_json = Path(utils.wiki_graph_json_path(user_id))
+    if not graph_json.is_file():
+        return
+    try:
+        emb_path = maybe_build_node_embeddings(graph_json)
+        if emb_path:
+            logger.info(
+                "DocGraph node embeddings built user=%s path=%s", user_id, emb_path
+            )
+    except Exception:
+        logger.exception("DocGraph node embeddings build failed user=%s", user_id)
+
+
 def _is_sync_progress_line(text: str) -> bool:
     """Skip noisy library warnings; keep brief sync milestones for logs/UI."""
     if not text:
@@ -466,6 +484,7 @@ def _run_sync(user_id: str, full: bool, model: str | None = None) -> None:
             _active_procs.pop(user_id, None)
             _persist_state(user_id, state)
         logger.info("DocGraph sync finished user=%s status=%s", user_id, state.status)
+        _build_docgraph_embeddings_after_sync(user_id)
     except Exception as exc:
         if proc is not None and proc.poll() is None:
             try:
