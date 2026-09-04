@@ -679,7 +679,11 @@ BASE_SYSTEM_PROMPT = (
 
 MAX_CONTEXT_TURNS = 5
 
-PROMPT_CACHE_CONTROL = {"type": "ephemeral", "ttl": "5m"}
+# NOTE: prompt caching is force-disabled below (_supports_prompt_caching
+# always returns False; this repo's chat model is OpenAI GPT, which doesn't
+# use this Anthropic/Bedrock cache_control breakpoint). ttl kept at 1h for
+# parity with other repos in case Claude/Nova support is enabled later.
+PROMPT_CACHE_CONTROL = {"type": "ephemeral", "ttl": "1h"}
 
 
 def _supports_prompt_caching(model_type: str | None) -> bool:
