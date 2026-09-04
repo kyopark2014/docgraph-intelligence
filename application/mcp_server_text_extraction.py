@@ -2,7 +2,7 @@
 Image → Markdown text extraction via AWS Bedrock multimodal.
 
 Used as:
-  - Optional FastMCP server when ``mcp`` is installed (agent tools)
+  - Optional MCPServer when ``mcp`` is installed (agent tools)
   - DocGraph Sync Foundation Model Parser now lives in ``graph/lib/img2text.py``
 
 Based on chat.py summarize_image / extract_text logic.
@@ -45,9 +45,9 @@ model_type = profile["model_type"]
 
 mcp = None
 try:
-    from mcp.server.fastmcp import FastMCP
+    from mcp.server.mcpserver import MCPServer
 
-    mcp = FastMCP(
+    mcp = MCPServer(
         name="text_extraction",
         instructions=(
             "Extract text from images using an LLM. "
