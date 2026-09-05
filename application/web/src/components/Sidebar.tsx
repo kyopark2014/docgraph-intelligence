@@ -34,8 +34,8 @@ const LLM_GATEWAY_NOT_CONFIGURED =
   "LLM Gateway is not configured, so it cannot be enabled. Ask an administrator to set it up.";
 
 const THEME_OPTIONS = ["Light", "Dark"] as const;
-const WIKI_OPTIONS = ["Sync", "Graph", "Configure"] as const;
-const KNOWLEDGE_ACTIONS = ["Sync", "Graph"] as const;
+const WIKI_OPTIONS = ["Sync", "Rebuild", "Graph", "Configure"] as const;
+const KNOWLEDGE_ACTIONS = ["Sync", "Rebuild", "Graph"] as const;
 
 /** Drop botocore credential chatter from DocGraph sync status messages. */
 function sanitizeSyncMessage(
@@ -122,9 +122,11 @@ export function Sidebar({
     aggregated?: boolean | null;
   } | null>(null);
   const [wikiSyncPopupOpen, setWikiSyncPopupOpen] = useState(false);
+  const [wikiSyncTitle, setWikiSyncTitle] = useState("Wiki Sync");
   const [knowledgeSyncBusy, setKnowledgeSyncBusy] = useState(false);
   const [knowledgeSyncMessage, setKnowledgeSyncMessage] = useState<string | null>(null);
   const [knowledgeSyncPopupOpen, setKnowledgeSyncPopupOpen] = useState(false);
+  const [knowledgeSyncTitle, setKnowledgeSyncTitle] = useState("Knowledge Sync");
   const [settingsExpanded, setSettingsExpanded] = useState(false);
   const { theme, setTheme } = useTheme();
   const skills = activeTask?.skills ?? config?.default_skills ?? [];
@@ -188,33 +190,44 @@ export function Sidebar({
       handleSettingApplied();
       return;
     }
-    if (choice !== "Sync") return;
+    if (choice !== "Sync" && choice !== "Rebuild") return;
+    const full = choice === "Rebuild";
+    const label = full ? "Rebuild" : "동기화";
+    setWikiSyncTitle(full ? "Wiki Rebuild" : "Wiki Sync");
     setWikiSyncPopupOpen(true);
     setWikiSyncBusy(true);
-    setWikiSyncMessage("Starting DocGraph sync…");
+    setWikiSyncMessage(
+      full
+        ? "Wiki 전체 재빌드를 시작합니다…"
+        : "Wiki 동기화를 시작합니다…",
+    );
     try {
-      const result = await api.syncWiki(false, modelName || undefined);
+      const result = await api.syncWiki(full, modelName || undefined);
       const status = result.status;
       if (status === "error") {
         setWikiSyncBusy(false);
-        setWikiSyncMessage(result.error || "DocGraph sync failed.");
+        setWikiSyncMessage(result.error || `Wiki ${label}에 실패했습니다.`);
       } else if (status === "unchanged") {
         setWikiSyncBusy(false);
-        setWikiSyncMessage("No files changed.");
+        setWikiSyncMessage(
+          full
+            ? "재빌드할 변경이 없습니다."
+            : "변경된 파일이 없습니다.",
+        );
       } else {
         // Keep syncing indicator; background poll clears it when done.
         setWikiSyncBusy(true);
         setWikiSyncMessage(
-          sanitizeSyncMessage(
-            result.message,
-            "DocGraph sync is running in the background.",
-          ),
+          result.message ||
+            (full
+              ? "Wiki 전체 재빌드를 백그라운드에서 실행 중입니다."
+              : "Wiki 동기화를 백그라운드에서 실행 중입니다."),
         );
       }
     } catch (err) {
       setWikiSyncBusy(false);
       setWikiSyncMessage(
-        err instanceof Error ? err.message : "DocGraph sync failed.",
+        err instanceof Error ? err.message : `Wiki ${label}에 실패했습니다.`,
       );
     } finally {
       // Do not open Graph modal — sync continues independently.
@@ -238,42 +251,57 @@ export function Sidebar({
       handleSettingApplied();
       return;
     }
-    if (choice !== "Sync") return;
+    if (choice !== "Sync" && choice !== "Rebuild") return;
+    const force = choice === "Rebuild";
+    const label = force ? "Rebuild" : "동기화";
+    setKnowledgeSyncTitle(force ? "Knowledge Rebuild" : "Knowledge Sync");
     setKnowledgeSyncPopupOpen(true);
     setKnowledgeSyncBusy(true);
-    setKnowledgeSyncMessage("Starting Knowledge sync…");
+    setKnowledgeSyncMessage(
+      force
+        ? "Knowledge 전체 재빌드를 시작합니다…"
+        : "Knowledge 동기화를 시작합니다…",
+    );
     try {
-      const result = await api.rebuildGraph(false);
+      const result = await api.rebuildGraph(force);
       const status = result.status;
       if (status === "error") {
         setKnowledgeSyncBusy(false);
-        setKnowledgeSyncMessage(result.error || "Knowledge sync failed.");
+        setKnowledgeSyncMessage(
+          result.error || `Knowledge ${label}에 실패했습니다.`,
+        );
       } else if (status === "skipped_cooldown") {
         setKnowledgeSyncBusy(false);
         setKnowledgeSyncMessage(
-          result.message || "You can sync again shortly.",
+          force
+            ? "이미 재빌드가 진행 중이거나 잠시 대기 중입니다."
+            : "잠시 후 다시 동기화할 수 있습니다.",
         );
-      } else if (status === "skipped_unchanged") {
-        setKnowledgeSyncBusy(false);
-        setKnowledgeSyncMessage(result.message || "No sources changed.");
       } else if (status === "disabled") {
         setKnowledgeSyncBusy(false);
-        setKnowledgeSyncMessage("Knowledge is Off. Turn it On, then Sync.");
+        setKnowledgeSyncMessage(
+          "Knowledge가 Off 상태입니다. On으로 켠 뒤 다시 시도하세요.",
+        );
       } else if (status === "queued" || status === "running") {
         setKnowledgeSyncBusy(true);
         setKnowledgeSyncMessage(
-          result.message || "Knowledge sync is running in the background.",
+          result.message ||
+            (force
+              ? "Knowledge 전체 재빌드를 백그라운드에서 실행 중입니다."
+              : "Knowledge 동기화를 백그라운드에서 실행 중입니다."),
         );
       } else {
         setKnowledgeSyncBusy(false);
         setKnowledgeSyncMessage(
-          result.message || "Knowledge sync completed.",
+          force
+            ? "Knowledge 재빌드가 완료되었습니다."
+            : "Knowledge 동기화가 완료되었습니다.",
         );
       }
     } catch (err) {
       setKnowledgeSyncBusy(false);
       setKnowledgeSyncMessage(
-        err instanceof Error ? err.message : "Knowledge sync failed.",
+        err instanceof Error ? err.message : `Knowledge ${label}에 실패했습니다.`,
       );
     } finally {
       handleSettingApplied();
@@ -728,7 +756,7 @@ export function Sidebar({
 
       {knowledgeSyncPopupOpen && (
         <SyncProgressModal
-          title="Knowledge Sync"
+          title={knowledgeSyncTitle}
           busy={knowledgeSyncBusy}
           message={knowledgeSyncMessage}
           onClose={() => setKnowledgeSyncPopupOpen(false)}
