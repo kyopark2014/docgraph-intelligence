@@ -122,7 +122,7 @@ export function Sidebar({
     aggregated?: boolean | null;
   } | null>(null);
   const [wikiSyncPopupOpen, setWikiSyncPopupOpen] = useState(false);
-  const [wikiSyncTitle, setWikiSyncTitle] = useState("Wiki Sync");
+  const [wikiSyncTitle, setWikiSyncTitle] = useState("DocGraph Sync");
   const [knowledgeSyncBusy, setKnowledgeSyncBusy] = useState(false);
   const [knowledgeSyncMessage, setKnowledgeSyncMessage] = useState<string | null>(null);
   const [knowledgeSyncPopupOpen, setKnowledgeSyncPopupOpen] = useState(false);
@@ -193,7 +193,7 @@ export function Sidebar({
     if (choice !== "Sync" && choice !== "Rebuild") return;
     const full = choice === "Rebuild";
     const label = full ? "Rebuild" : "동기화";
-    setWikiSyncTitle(full ? "Wiki Rebuild" : "Wiki Sync");
+    setWikiSyncTitle(full ? "DocGraph Rebuild" : "DocGraph Sync");
     setWikiSyncPopupOpen(true);
     setWikiSyncBusy(true);
     setWikiSyncMessage(
@@ -746,7 +746,7 @@ export function Sidebar({
 
       {wikiSyncPopupOpen && (
         <SyncProgressModal
-          title="DocGraph Sync"
+          title={wikiSyncTitle}
           busy={wikiSyncBusy}
           message={wikiSyncMessage}
           progress={wikiSyncProgress}
