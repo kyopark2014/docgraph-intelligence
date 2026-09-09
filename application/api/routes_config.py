@@ -25,6 +25,7 @@ _APPLICATION_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MODELS = [
     "OpenAI GPT 5.4",
     "OpenAI GPT 5.5",
+    "OpenAI GPT 6 Astra",
     "OpenAI GPT 5.6 Sol",
     "OpenAI GPT 5.6 Terra",
     "OpenAI GPT 5.6 Luna",
