@@ -147,7 +147,16 @@ def _completion_kwargs(
         "messages": messages,
     }
 
-    if temperature is not None:
+    mid = model.lower()
+    rejects_temperature = _model_family(model) == "claude" and (
+        re.search(r"claude-(opus|sonnet|haiku)-4", mid)
+        or "fable" in mid
+        or "claude-sonnet-5" in mid
+        or "claude-5-sonnet" in mid
+        or "claude-opus-5" in mid
+        or "claude-5-opus" in mid
+    )
+    if temperature is not None and not rejects_temperature:
         kwargs["temperature"] = temperature
 
     if use_json_object and family == "openai":
